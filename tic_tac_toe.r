@@ -132,13 +132,43 @@ check_finish <- function(state){
 	}
 }
 
-play <- function(){
+# Visualise game
+library(ggplot2)
+
+blank_theme <- theme_minimal()+
+      theme(
+            axis.title = element_blank(),
+            axis.text = element_blank(),
+            panel.border = element_blank(),
+            panel.grid=element_blank(),
+            axis.ticks = element_blank(),
+            plot.title=element_text(size=14, face="bold")
+      )
+visualise_game <- function(current_state){	
+	visual_data <- data.frame(expand.grid(x = 1:3, y = 1:3), current_state)
+	visual_data$current_state <- ifelse(visual_data$current_state == 1, 'O', 'X')
+	ggplot(visual_data, aes(x = x, y = y)) +
+		geom_vline(xintercept = seq(0.5, 3.5, 1))+
+		geom_hline(yintercept = seq(0.5, 3.5, 1))+
+		scale_x_continuous(limit = c(0.5,3.5), expand = c(0,0))+
+		scale_y_continuous(limit = c(0.5,3.5), expand = c(0,0))+
+		theme_classic()+
+		blank_theme+
+		geom_text(aes(x = x , y = y, label = current_state), size = 24)+
+		ggtitle('O: me, X: machine')
+}		
+# visualise_game(current_state)
+	
+play <- function(first){
 	current_state <- rep(NA,9)
 	turn = 0
 	while(check_finish(current_state) == 0){
-		# print(matrix(current_state, 3, 3))
-		# player_move <- readline('Please select a move\n')
-		# current_state[as.numeric(player_move)] <- 1
+		if(first == 1){
+			print(visualise_game(current_state))
+			player_move <- readline('Please select a move\n')
+			current_state[as.numeric(player_move)] <- 1
+			if(check_finish(current_state) != 0) {break}
+		}	
 		x <- t(possible_move(current_state, turn = turn))
 		learned <- split(x, row(x)) %in% split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE))
 		if(sum(learned == FALSE) != 0){
@@ -149,20 +179,53 @@ play <- function(){
 		which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
 		decision <- learned_state[[1 + turn]][which_option, ]
 		current_state <- decision[1:9]
-		print(matrix(current_state, 3, 3))
-		player_move <- readline('Please select a move\n')
-		current_state[as.numeric(player_move)] <- 1
+		if(first == 0){
+			print(visualise_game(current_state))
+			player_move <- readline('Please select a move\n')
+			current_state[as.numeric(player_move)] <- 1
+		}
 	}		
-	print(matrix(current_state, 3, 3))	
+	print(visualise_game(current_state))
 	check_finish(current_state)
 }
-play()
+play(first=1)
 
 
-current_state <- c(1, 0, NA, 0, 1, NA, NA, NA, NA)
+current_state <- c(1, NA, NA, 0, 1, NA, 0, NA, NA)
 turn = 0
 
 decision
 
 late_game <- apply(learned_state[[1 + turn]][,1:9], 1, function(x) sum(is.na(x))) == 4
 plot(table(learned_state[[1 + turn]][late_game,10]))
+plot(table(learned_state[[1 + turn]][,10]))
+
+
+# Visualise game-----------------------------------------
+library(ggplot2)
+
+blank_theme <- theme_minimal()+
+      theme(
+            axis.title = element_blank(),
+            axis.text = element_blank(),
+            panel.border = element_blank(),
+            panel.grid=element_blank(),
+            axis.ticks = element_blank(),
+            plot.title=element_text(size=14, face="bold")
+      )
+	
+	
+visual_data <- data.frame(expand.grid(x = 1:3, y = 1:3), current_state)
+visual_data$current_state <- ifelse(visual_data$current_state == 1, 'O', 'X')
+ggplot(visual_data, aes(x = x, y = y)) +
+	geom_vline(xintercept = seq(0.5, 3.5, 1))+
+	geom_hline(yintercept = seq(0.5, 3.5, 1))+
+	scale_x_continuous(limit = c(0.5,3.5), expand = c(0,0))+
+	scale_y_continuous(limit = c(0.5,3.5), expand = c(0,0))+
+	theme_classic()+
+	blank_theme+
+    geom_text(aes(x = x , y = y, label = current_state), size = 24)
+	
+	
+	
+	
