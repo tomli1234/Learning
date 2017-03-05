@@ -37,18 +37,20 @@ learn_progress <- function(learned_state){
 }
 
 ## Initialisation
-alpha <- 0.5
-random <- 0.1
+alpha <- 0.1
+random <- 0.05
 learned_state <- NULL
 learned_state[[1]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
 learned_state[[2]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
 progress <- NULL
 
 ## Learning
-for(i in 1:30000){
+for(i in 1:60000){
 	current_state <- rep(NA,9)
 	turn <- sample(0:1, 1)
+	last_state_oppo <- NULL
 	while(is.null(check_status(current_state, turn))){
+	
 		## Update experience
 		learned <- list(current_state) %in% split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE))
 		if(learned == FALSE){
@@ -74,7 +76,9 @@ for(i in 1:30000){
 		old_value <- learned_state[[1 + turn]][last_state, 10]
 		current_state <- decision[1:9]
 		current_status <- check_status(current_state, turn)
+		
 		## Learning
+		### Current move
 		if(is.null(current_status)){
 			new_value <- decision[10]
 			learned_state[[1 + turn]][last_state, 10] <- old_value + alpha * (new_value - old_value)
@@ -83,7 +87,28 @@ for(i in 1:30000){
 			learned_state[[1 + turn]][last_state, 10] <- old_value + alpha * (new_value - old_value)
 			learned_state[[1 + turn]][which_option, 10] <- new_value
 		}
+		
 		turn <- abs(turn - 1)
+		
+		### Previous move of opponent (learning defensive move)
+		oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
+									matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
+											nrow = nrow(learned_state[[1 + turn]]), 
+											byrow = TRUE)) 
+									%in% list(last_state_oppo))
+		oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
+		oppo_status <- check_status(current_state, turn)
+		if(is.null(oppo_status)){
+			# new_value <- decision[10]
+			# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
+		} else {
+			new_value <- oppo_status
+			learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + 0.5 * (new_value - oppo_value)
+			print(learned_state[[1 + turn]][oppo_state, 10] )
+		}	
+		
+		last_state_oppo <- current_state
+		
 	}
 	print(paste0(i,', ', nrow(learned_state[[1]])))
 	progress <- c(progress, learn_progress(learned_state[[1]]))
@@ -133,11 +158,11 @@ play <- function(){
 }
 play()
 
-current_state <- c(NA, NA, NA, NA, 1, NA, 1, 0, 0)
+
+current_state <- c(1, 0, NA, 0, 1, NA, NA, NA, NA)
 turn = 0
 
 decision
 
-
-
-
+late_game <- apply(learned_state[[1 + turn]][,1:9], 1, function(x) sum(is.na(x))) == 4
+plot(table(learned_state[[1 + turn]][late_game,10]))
