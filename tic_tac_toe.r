@@ -198,7 +198,7 @@ play <- function(first){
 	print(g)
 	check_finish(current_state)
 }
-play(first=1)
+play(first=0)
 
 library(animation)
 # Animation
@@ -215,7 +215,7 @@ turn = 0
 
 decision
 
-late_game <- apply(learned_state[[1 + turn]][,1:9], 1, function(x) sum(is.na(x))) == 4
+late_game <- apply(learned_state[[1 + turn]][,1:9], 1, function(x) sum(is.na(x))) == 0
 plot(table(learned_state[[1 + turn]][late_game,10]))
 plot(table(learned_state[[1 + turn]][,10]))
 
