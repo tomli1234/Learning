@@ -37,18 +37,20 @@ learn_progress <- function(learned_state){
 }
 
 ## Initialisation
-alpha <- 0.5
-random <- 0.1
+alpha <- 0.1
+random <- 0.05
 learned_state <- NULL
 learned_state[[1]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
 learned_state[[2]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
 progress <- NULL
 
 ## Learning
-for(i in 1:30000){
+for(i in 1:60000){
 	current_state <- rep(NA,9)
 	turn <- sample(0:1, 1)
+	last_state_oppo <- NULL
 	while(is.null(check_status(current_state, turn))){
+	
 		## Update experience
 		learned <- list(current_state) %in% split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE))
 		if(learned == FALSE){
@@ -74,7 +76,9 @@ for(i in 1:30000){
 		old_value <- learned_state[[1 + turn]][last_state, 10]
 		current_state <- decision[1:9]
 		current_status <- check_status(current_state, turn)
+		
 		## Learning
+		### Current move
 		if(is.null(current_status)){
 			new_value <- decision[10]
 			learned_state[[1 + turn]][last_state, 10] <- old_value + alpha * (new_value - old_value)
@@ -83,7 +87,28 @@ for(i in 1:30000){
 			learned_state[[1 + turn]][last_state, 10] <- old_value + alpha * (new_value - old_value)
 			learned_state[[1 + turn]][which_option, 10] <- new_value
 		}
+		
 		turn <- abs(turn - 1)
+		
+		### Previous move of opponent (learning defensive move)
+		oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
+									matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
+											nrow = nrow(learned_state[[1 + turn]]), 
+											byrow = TRUE)) 
+									%in% list(last_state_oppo))
+		oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
+		oppo_status <- check_status(current_state, turn)
+		if(is.null(oppo_status)){
+			# new_value <- decision[10]
+			# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
+		} else {
+			new_value <- oppo_status
+			learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + 0.5 * (new_value - oppo_value)
+			print(learned_state[[1 + turn]][oppo_state, 10] )
+		}	
+		
+		last_state_oppo <- current_state
+		
 	}
 	print(paste0(i,', ', nrow(learned_state[[1]])))
 	progress <- c(progress, learn_progress(learned_state[[1]]))
@@ -107,13 +132,44 @@ check_finish <- function(state){
 	}
 }
 
-play <- function(){
+# Visualise game
+library(ggplot2)
+
+blank_theme <- theme_minimal()+
+      theme(
+            axis.title = element_blank(),
+            axis.text = element_blank(),
+            panel.border = element_blank(),
+            panel.grid=element_blank(),
+            axis.ticks = element_blank(),
+            plot.title=element_text(size=14, face="bold")
+      )
+visualise_game <- function(current_state){	
+	visual_data <- data.frame(expand.grid(x = 1:3, y = 1:3), current_state)
+	visual_data$current_state <- ifelse(visual_data$current_state == 1, 'O', 'X')
+	ggplot(visual_data, aes(x = x, y = y)) +
+		geom_vline(xintercept = seq(0.5, 3.5, 1))+
+		geom_hline(yintercept = seq(0.5, 3.5, 1))+
+		scale_x_continuous(limit = c(0.5,3.5), expand = c(0,0))+
+		scale_y_continuous(limit = c(0.5,3.5), expand = c(0,0))+
+		theme_classic()+
+		blank_theme+
+		geom_text(aes(x = x , y = y, label = current_state), size = 24)+
+		ggtitle('O: me\nX: machine')
+}		
+visualise_game(current_state)
+	
+play <- function(first){
 	current_state <- rep(NA,9)
 	turn = 0
 	while(check_finish(current_state) == 0){
-		# print(matrix(current_state, 3, 3))
-		# player_move <- readline('Please select a move\n')
-		# current_state[as.numeric(player_move)] <- 1
+		if(first == 1){
+			print(matrix(current_state, 3, 3))
+			print(visualise_game(current_state))
+			player_move <- readline('Please select a move\n')
+			current_state[as.numeric(player_move)] <- 1
+			if(check_finish(current_state) != 0) {break}
+		}	
 		x <- t(possible_move(current_state, turn = turn))
 		learned <- split(x, row(x)) %in% split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE))
 		if(sum(learned == FALSE) != 0){
@@ -124,20 +180,42 @@ play <- function(){
 		which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
 		decision <- learned_state[[1 + turn]][which_option, ]
 		current_state <- decision[1:9]
-		print(matrix(current_state, 3, 3))
-		player_move <- readline('Please select a move\n')
-		current_state[as.numeric(player_move)] <- 1
+		if(first == 0){
+			print(matrix(current_state, 3, 3))
+			print(visualise_game(current_state))
+			player_move <- readline('Please select a move\n')
+			current_state[as.numeric(player_move)] <- 1
+		}
 	}		
-	print(matrix(current_state, 3, 3))	
+	g <- visualise_game(current_state)
+	if(check_finish(current_state) == 'Player 1 wins'){
+		g <- g + annotate('text', x = 2, y = 2, label = 'O wins', size = 20, colour = 'skyblue2')
+	} else if(check_finish(current_state) == 'Player 0 wins'){
+		g <- g + annotate('text', x = 2, y = 2, label = 'X wins', size = 20, colour = 'skyblue2')		
+	} else {
+		g <- g + annotate('text', x = 2, y = 2, label = 'Draw', size = 20, colour = 'skyblue2')				
+	}
+	print(g)
 	check_finish(current_state)
 }
-play()
+play(first=0)
 
-current_state <- c(NA, NA, NA, NA, 1, NA, 1, 0, 0)
+library(animation)
+# Animation
+saveGIF(for(i in 0:5){
+			first <- i %% 2
+			play(first = first)
+		},
+	interval = 2, 
+	movie.name="C:\\Users\\tomli\\Desktop\\tic_tac_toe.gif")
+
+
+current_state <- c(1, NA, NA, 0, 1, NA, 0, NA, NA)
 turn = 0
 
 decision
 
-
-
+late_game <- apply(learned_state[[1 + turn]][,1:9], 1, function(x) sum(is.na(x))) == 0
+plot(table(learned_state[[1 + turn]][late_game,10]))
+plot(table(learned_state[[1 + turn]][,10]))
 
