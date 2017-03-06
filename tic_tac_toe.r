@@ -43,6 +43,7 @@ learned_state <- NULL
 learned_state[[1]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
 learned_state[[2]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
 progress <- NULL
+backup_state <- NULL
 
 ## Learning
 for(i in 1:60000){
@@ -72,8 +73,8 @@ for(i in 1:60000){
 			which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
 		}
 		decision <- learned_state[[1 + turn]][which_option, ]
-		last_state <- which(split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE)) %in% list(current_state))
-		old_value <- learned_state[[1 + turn]][last_state, 10]
+		last_move <- which(split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE)) %in% list(backup_state[[1 + turn]]))
+		old_value <- learned_state[[1 + turn]][last_move, 10]
 		current_state <- decision[1:9]
 		current_status <- check_status(current_state, turn)
 		
@@ -81,33 +82,35 @@ for(i in 1:60000){
 		### Current move
 		if(is.null(current_status)){
 			new_value <- decision[10]
-			learned_state[[1 + turn]][last_state, 10] <- old_value + alpha * (new_value - old_value)
+			learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
 		} else {
 			new_value <- current_status
-			learned_state[[1 + turn]][last_state, 10] <- old_value + alpha * (new_value - old_value)
+			learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
 			learned_state[[1 + turn]][which_option, 10] <- new_value
 		}
 		
+		backup_state[[1 + turn]] <- current_state
+		
 		turn <- abs(turn - 1)
 		
-		### Previous move of opponent (learning defensive move)
-		oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
-									matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-											nrow = nrow(learned_state[[1 + turn]]), 
-											byrow = TRUE)) 
-									%in% list(last_state_oppo))
-		oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
-		oppo_status <- check_status(current_state, turn)
-		if(is.null(oppo_status)){
-			# new_value <- decision[10]
-			# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
-		} else {
-			new_value <- oppo_status
-			learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + 0.5 * (new_value - oppo_value)
-			print(learned_state[[1 + turn]][oppo_state, 10] )
-		}	
+		# ### Previous move of opponent (learning defensive move)
+		# oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
+									# matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
+											# nrow = nrow(learned_state[[1 + turn]]), 
+											# byrow = TRUE)) 
+									# %in% list(last_state_oppo))
+		# oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
+		# oppo_status <- check_status(current_state, turn)
+		# if(is.null(oppo_status)){
+			# # new_value <- decision[10]
+			# # learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
+		# } else {
+			# new_value <- oppo_status
+			# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + 0.5 * (new_value - oppo_value)
+			# print(learned_state[[1 + turn]][oppo_state, 10] )
+		# }	
 		
-		last_state_oppo <- current_state
+		# last_state_oppo <- current_state
 		
 	}
 	print(paste0(i,', ', nrow(learned_state[[1]])))
@@ -210,12 +213,12 @@ saveGIF(for(i in 0:5){
 	movie.name="C:\\Users\\tomli\\Desktop\\tic_tac_toe.gif")
 
 
-current_state <- c(1, NA, NA, 0, 1, NA, 0, NA, NA)
+current_state <- c(NA, 0, NA, 0, 1, 1, NA, NA, NA)
 turn = 0
 
 decision
 
-late_game <- apply(learned_state[[1 + turn]][,1:9], 1, function(x) sum(is.na(x))) == 0
+late_game <- apply(learned_state[[1 + turn]][,1:9], 1, function(x) sum(is.na(x))) == 6
 plot(table(learned_state[[1 + turn]][late_game,10]))
 plot(table(learned_state[[1 + turn]][,10]))
 
