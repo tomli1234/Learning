@@ -38,7 +38,7 @@ learn_progress <- function(learned_state){
 
 ## Initialisation
 alpha <- 0.1
-random <- 0.05
+random <- 0.2
 learned_state <- NULL
 learned_state[[1]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
 learned_state[[2]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
@@ -47,6 +47,7 @@ backup_state <- NULL
 
 ## Learning
 for(i in 1:60000){
+	# alpha <- 1/i^(1/2.5)
 	current_state <- rep(NA,9)
 	turn <- sample(0:1, 1)
 	last_state_oppo <- NULL
@@ -73,7 +74,10 @@ for(i in 1:60000){
 			which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
 		}
 		decision <- learned_state[[1 + turn]][which_option, ]
-		last_move <- which(split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE)) %in% list(backup_state[[1 + turn]]))
+		last_move <- which(split(learned_state[[1 + turn]][, 1:9], 
+									matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
+										nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE)) 
+								%in% list(backup_state[[1 + turn]]))
 		old_value <- learned_state[[1 + turn]][last_move, 10]
 		current_state <- decision[1:9]
 		current_status <- check_status(current_state, turn)
@@ -160,7 +164,7 @@ visualise_game <- function(current_state){
 		geom_text(aes(x = x , y = y, label = current_state), size = 24)+
 		ggtitle('O: me\nX: machine')
 }		
-visualise_game(current_state)
+# visualise_game(current_state)
 	
 play <- function(first){
 	current_state <- rep(NA,9)
@@ -201,7 +205,7 @@ play <- function(first){
 	print(g)
 	check_finish(current_state)
 }
-play(first=0)
+play(first=1)
 
 library(animation)
 # Animation
@@ -213,7 +217,7 @@ saveGIF(for(i in 0:5){
 	movie.name="C:\\Users\\tomli\\Desktop\\tic_tac_toe.gif")
 
 
-current_state <- c(NA, 0, NA, 0, 1, 1, NA, NA, NA)
+current_state <- c(0, NA, 1, NA, NA, NA, NA, NA, 1)
 turn = 0
 
 decision
@@ -222,3 +226,4 @@ late_game <- apply(learned_state[[1 + turn]][,1:9], 1, function(x) sum(is.na(x))
 plot(table(learned_state[[1 + turn]][late_game,10]))
 plot(table(learned_state[[1 + turn]][,10]))
 
+learned_state[[1 + turn]][late_game,]
