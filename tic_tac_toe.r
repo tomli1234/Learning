@@ -52,11 +52,37 @@ check_which_state <- function(learned_state, current_state){
 	matched <- FALSE
 	while(!matched){
 		i <- i + 1
+		if(i > nrow(learned_state)) {break}
 		matched <- sum(learned_state[i,][1:9] - current_state) == 0
 	}
-	return(i)
+	if(matched) {return(i)}
 }
-check_which_state(learned_state[[1 + turn]], current_state)
+check_which_state2 <- function(learned_state, current_state){
+	list(current_state) %in% 
+						split(learned_state[, 1:9], 
+								matrix(rep(1:nrow(learned_state), each = 9), 
+									nrow = nrow(learned_state), 
+									byrow = TRUE))
+}
+cppFunction('int check_which_state_C(NumericMatrix x, NumericVector x2){
+	int i = 0;
+	int count = 0;
+	int n = x.rows();
+	while(count < 9 && i < n) {
+		if(sum(x(i, _) == x2) == 9) {
+			count = 9;
+		}
+		i += 1;
+	}
+	if(count == 9){
+		return i;
+	}
+}')
+microbenchmark(
+check_which_state(matrix(2, 8000,9), c(1,1,1,1,1,1,1,1,1)),
+check_which_state2(matrix(2, 8000,9), c(1,1,1,1,1,1,1,1,1)),
+check_which_state_C(matrix(2, 8000,9), c(1,1,1,1,1,1,1,1,1))
+)
 
 ## Initialisation
 alpha <- 0.1
