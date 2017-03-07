@@ -35,65 +35,13 @@ check_status <- function(state,
 	}
 }
 
-cppFunction('double learn_progress_C(NumericVector x){
-	int n = x.size();
-	double total = 0;
-	for(int i; i < n; ++i) {
-		total += pow(x[i] - 0.5, 2.0);
-	}
-	return total/n;
-}')
-# learn_progress <- function(learned_state){
-	# mean((learned_state[,10] - 0.5)^2)
-# }
 
-# check_which_state <- function(learned_state, current_state){
-	# i <- 0
-	# matched <- FALSE
-	# while(!matched){
-		# i <- i + 1
-		# if(i > nrow(learned_state)) {break}
-		# matched <- sum(learned_state[i,][1:9] - current_state) == 0
-	# }
-	# if(matched) {return(i)}
-# }
-# check_which_state2 <- function(learned_state, current_state){
-	# list(current_state) %in% 
-						# split(learned_state[, 1:9], 
-								# matrix(rep(1:nrow(learned_state), each = 9), 
-									# nrow = nrow(learned_state), 
-									# byrow = TRUE))
-# }
-cppFunction('int check_which_state_C(NumericMatrix x, NumericVector x2){
-	int i = 0;
-	int count = 0;
-	int n = x.rows();
-	while(count < 9 && i < n) {
-		if(sum(x(i, _) == x2) == 9) {
-			count = 9;
-		}
-		i += 1;
-	}
-	if(count == 9){
-		return i;
-	}
-}')
+sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\learn_progress_C.cpp')
 sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_C.cpp')
+sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_2_C.cpp')
 
-cppFunction('NumericVector check_which_state_2_C(NumericMatrix x, NumericMatrix x2){
-	int n = x2.rows();
-	NumericVector output (n); 
-	for(int i; i < n; ++i){
-		output[i] = check_which_state_C(x, x2(i , _));
-	}
-	return output;
-}')
-
-microbenchmark(
-check_which_state(matrix(2, 8000,9), c(1,1,1,1,1,1,1,1,1)),
-check_which_state2(matrix(2, 8000,9), c(1,1,1,1,1,1,1,1,1)),
-check_which_state_C(matrix(2, 8000,9), c(1,1,1,1,1,1,1,1,1))
-)
+# check_which_state_C(matrix(rep(-1, 9), ncol=9), c(1, 1,-1,-1,-1,-1,-1,-1,-1))
+# check_which_state_2_C(rbind(matrix(1, 8000,9),rep(2,9)), matrix(2, 3,9))
 
 ## Initialisation
 alpha <- 0.1
@@ -119,25 +67,19 @@ for(i in 1:60000){
 												c(current_state, 0.5))
 		}
 		x <- t(possible_move(current_state, turn = turn))
-		learned <- split(x, row(x)) %in% 
-					split(learned_state[[1 + turn]][, 1:9], 
-						matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-							nrow = nrow(learned_state[[1 + turn]]), 
-							byrow = TRUE))
-							
-							
-		if(sum(learned == FALSE) != 0){
+
+		learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
+		
+		# If not seen possible move, then assign it with 0.5
+		if(sum(learned == 0) > 0){
 			learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
-											cbind(matrix(x[learned == FALSE, ], 
-													nrow=sum(learned == FALSE)), 0.5))
+											cbind(matrix(x[learned == 0, ], 
+													nrow=sum(learned == 0)), 0.5))
 		}
 			
 		## Decision
-		option <- which(split(learned_state[[1 + turn]][, 1:9], 
-								matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-									nrow = nrow(learned_state[[1 + turn]]), 
-									byrow = TRUE)) 
-						%in% split(x, row(x)))
+		option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
+					
 		decision_values <- learned_state[[1 + turn]][option, 10]
 		random_move <- runif(1) < random
 		if(random_move){
