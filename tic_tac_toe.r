@@ -38,19 +38,18 @@ learn_progress <- function(learned_state){
 
 ## Initialisation
 alpha <- 0.1
-random <- 0.2
+random <- 0.1
 learned_state <- NULL
 learned_state[[1]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
 learned_state[[2]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
 progress <- NULL
-backup_state <- NULL
 
 ## Learning
 for(i in 1:60000){
 	# alpha <- 1/i^(1/2.5)
 	current_state <- rep(NA,9)
 	turn <- sample(0:1, 1)
-	last_state_oppo <- NULL
+	backup_state <- list(NA,NA)
 	while(is.null(check_status(current_state, turn))){
 	
 		## Update experience
@@ -97,7 +96,7 @@ for(i in 1:60000){
 		
 		turn <- abs(turn - 1)
 		
-		# ### Previous move of opponent (learning defensive move)
+		### Previous move of opponent (learning defensive move)
 		# oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
 									# matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
 											# nrow = nrow(learned_state[[1 + turn]]), 
@@ -106,8 +105,8 @@ for(i in 1:60000){
 		# oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
 		# oppo_status <- check_status(current_state, turn)
 		# if(is.null(oppo_status)){
-			# # new_value <- decision[10]
-			# # learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
+			## new_value <- decision[10]
+			## learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
 		# } else {
 			# new_value <- oppo_status
 			# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + 0.5 * (new_value - oppo_value)
