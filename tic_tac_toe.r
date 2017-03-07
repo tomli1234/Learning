@@ -47,18 +47,29 @@ cppFunction('double learn_progress_C(NumericVector x){
 	# mean((learned_state[,10] - 0.5)^2)
 # }
 
+check_which_state <- function(learned_state, current_state){
+	i <- 0
+	matched <- FALSE
+	while(!matched){
+		i <- i + 1
+		matched <- sum(learned_state[i,][1:9] - current_state) == 0
+	}
+	return(i)
+}
+check_which_state(learned_state[[1 + turn]], current_state)
+
 ## Initialisation
 alpha <- 0.1
 random <- 0.1
 learned_state <- NULL
-learned_state[[1]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
-learned_state[[2]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
+learned_state[[1]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
+learned_state[[2]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
 progress <- NULL
 
 ## Learning
 for(i in 1:60000){
 	# alpha <- 1/i^(1/2.5)
-	current_state <- rep(NA,9)
+	current_state <- rep(-1,9)
 	turn <- sample(0:1, 1)
 	backup_state <- list(NA,NA)
 	while(is.null(check_status(current_state, turn))){
@@ -69,6 +80,7 @@ for(i in 1:60000){
 							matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
 								nrow = nrow(learned_state[[1 + turn]]), 
 								byrow = TRUE))
+learned_state[[1 + turn]][, 1:9] - current_state
 
 		if(learned == FALSE){
 			learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
