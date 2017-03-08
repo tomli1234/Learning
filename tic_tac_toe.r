@@ -143,6 +143,7 @@ for(i in 1:60000){
 
 
 check_finish <- function(state){
+	state[state == -1] <- NA
 	state_mat <- matrix(state, 3, 3)
 	colsum1 <- colSums(state_mat)
 	rowsum1 <- rowSums(state_mat)
@@ -171,6 +172,7 @@ blank_theme <- theme_minimal()+
             plot.title=element_text(size=14, face="bold")
       )
 visualise_game <- function(current_state){	
+	current_state[current_state == -1] <- NA
 	visual_data <- data.frame(expand.grid(x = 1:3, y = 1:3), current_state)
 	visual_data$current_state <- ifelse(visual_data$current_state == 1, 'O', 'X')
 	ggplot(visual_data, aes(x = x, y = y)) +
@@ -186,7 +188,7 @@ visualise_game <- function(current_state){
 # visualise_game(current_state)
 	
 play <- function(first){
-	current_state <- rep(NA,9)
+	current_state <- rep(-1,9)
 	turn = 0
 	while(check_finish(current_state) == 0){
 		if(first == 1){
