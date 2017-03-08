@@ -89,11 +89,7 @@ for(i in 1:60000){
 			which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
 		}
 		decision <- learned_state[[1 + turn]][which_option, ]
-		# last_move <- which(split(learned_state[[1 + turn]][, 1:9], 
-									# matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-										# nrow = nrow(learned_state[[1 + turn]]), 
-										# byrow = TRUE)) 
-								# %in% list(backup_state[[1 + turn]]))
+
 		last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))
 					
 		old_value <- learned_state[[1 + turn]][last_move, 10]
@@ -116,12 +112,6 @@ for(i in 1:60000){
 		turn <- abs(turn - 1)
 		
 		### Learning from opponent's move (learning defensive move)
-		# oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
-									# matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-											# nrow = nrow(learned_state[[1 + turn]]), 
-											# byrow = TRUE)) 
-									# %in% list(backup_state[[1 + turn]]))
-									
 		oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))
 						
 		oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
