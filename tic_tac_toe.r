@@ -10,7 +10,7 @@ library(Rcpp)
 
 possible_move <- function(current_state,
 						  turn){
-	possible_decision <- which(is.na(current_state))
+	possible_decision <- which(current_state == -1)
 	sapply(possible_decision, function(x) {
 			current_state[x] <- turn
 			return(state = current_state)	
@@ -22,6 +22,7 @@ sample.vec <- function(x, ...) x[sample(length(x), ...)]
 
 check_status <- function(state,
 						 turn){
+	state[state == -1] <- NA
 	state_mat <- matrix(state, 3, 3)
 	colsum1 <- colSums(state_mat)
 	rowsum1 <- rowSums(state_mat)
@@ -35,63 +36,51 @@ check_status <- function(state,
 	}
 }
 
-cppFunction('double learn_progress_C(NumericVector x){
-	int n = x.size();
-	double total = 0;
-	for(int i; i < n; ++i) {
-		total += pow(x[i] - 0.5, 2.0);
-	}
-	return total/n;
-}')
-# learn_progress <- function(learned_state){
-	# mean((learned_state[,10] - 0.5)^2)
-# }
+
+sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\learn_progress_C.cpp')
+sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_C.cpp')
+sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_2_C.cpp')
+
+# check_which_state_C(matrix(rep(-1, 9), ncol=9), c(1, 1,-1,-1,-1,-1,-1,-1,-1))
+# check_which_state_2_C(rbind(matrix(1, 8000,9),rep(2,9)), matrix(2, 3,9))
 
 ## Initialisation
 alpha <- 0.1
 random <- 0.1
 learned_state <- NULL
-learned_state[[1]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
-learned_state[[2]] <- matrix(c(rep(NA, 9), 0.5), 1, 10)
+learned_state[[1]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
+learned_state[[2]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
 progress <- NULL
 
 ## Learning
 for(i in 1:60000){
 	# alpha <- 1/i^(1/2.5)
-	current_state <- rep(NA,9)
+	current_state <- rep(-1,9)
 	turn <- sample(0:1, 1)
-	backup_state <- list(NA,NA)
+	backup_state <- list(matrix(-2, ncol = 9),matrix(-2, ncol = 9))
 	while(is.null(check_status(current_state, turn))){
 	
 		## Update experience
-		learned <- list(current_state) %in% 
-					split(learned_state[[1 + turn]][, 1:9], 
-							matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-								nrow = nrow(learned_state[[1 + turn]]), 
-								byrow = TRUE))
-
-		if(learned == FALSE){
+		learned <- check_which_state_C(as.matrix(learned_state[[1 + turn]][, 1:9]), current_state)
+		
+		if(learned == 0){
 			learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
 												c(current_state, 0.5))
 		}
 		x <- t(possible_move(current_state, turn = turn))
-		learned <- split(x, row(x)) %in% 
-					split(learned_state[[1 + turn]][, 1:9], 
-						matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-							nrow = nrow(learned_state[[1 + turn]]), 
-							byrow = TRUE))
-		if(sum(learned == FALSE) != 0){
+
+		learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
+		
+		# If not seen possible move, then assign it with 0.5
+		if(sum(learned == 0) > 0){
 			learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
-											cbind(matrix(x[learned == FALSE, ], 
-													nrow=sum(learned == FALSE)), 0.5))
+											cbind(matrix(x[learned == 0, ], 
+													nrow=sum(learned == 0)), 0.5))
 		}
 			
 		## Decision
-		option <- which(split(learned_state[[1 + turn]][, 1:9], 
-								matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-									nrow = nrow(learned_state[[1 + turn]]), 
-									byrow = TRUE)) 
-						%in% split(x, row(x)))
+		option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
+					
 		decision_values <- learned_state[[1 + turn]][option, 10]
 		random_move <- runif(1) < random
 		if(random_move){
@@ -100,11 +89,13 @@ for(i in 1:60000){
 			which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
 		}
 		decision <- learned_state[[1 + turn]][which_option, ]
-		last_move <- which(split(learned_state[[1 + turn]][, 1:9], 
-									matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-										nrow = nrow(learned_state[[1 + turn]]), 
-										byrow = TRUE)) 
-								%in% list(backup_state[[1 + turn]]))
+		# last_move <- which(split(learned_state[[1 + turn]][, 1:9], 
+									# matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
+										# nrow = nrow(learned_state[[1 + turn]]), 
+										# byrow = TRUE)) 
+								# %in% list(backup_state[[1 + turn]]))
+		last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))
+					
 		old_value <- learned_state[[1 + turn]][last_move, 10]
 		current_state <- decision[1:9]
 		current_status <- check_status(current_state, turn)
@@ -125,11 +116,14 @@ for(i in 1:60000){
 		turn <- abs(turn - 1)
 		
 		### Learning from opponent's move (learning defensive move)
-		oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
-									matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-											nrow = nrow(learned_state[[1 + turn]]), 
-											byrow = TRUE)) 
-									%in% list(backup_state[[1 + turn]]))
+		# oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
+									# matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
+											# nrow = nrow(learned_state[[1 + turn]]), 
+											# byrow = TRUE)) 
+									# %in% list(backup_state[[1 + turn]]))
+									
+		oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))
+						
 		oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
 		oppo_status <- check_status(current_state, turn)
 		if(is.null(oppo_status)){
@@ -149,6 +143,7 @@ for(i in 1:60000){
 
 
 check_finish <- function(state){
+	state[state == -1] <- NA
 	state_mat <- matrix(state, 3, 3)
 	colsum1 <- colSums(state_mat)
 	rowsum1 <- rowSums(state_mat)
@@ -177,6 +172,7 @@ blank_theme <- theme_minimal()+
             plot.title=element_text(size=14, face="bold")
       )
 visualise_game <- function(current_state){	
+	current_state[current_state == -1] <- NA
 	visual_data <- data.frame(expand.grid(x = 1:3, y = 1:3), current_state)
 	visual_data$current_state <- ifelse(visual_data$current_state == 1, 'O', 'X')
 	ggplot(visual_data, aes(x = x, y = y)) +
@@ -192,7 +188,7 @@ visualise_game <- function(current_state){
 # visualise_game(current_state)
 	
 play <- function(first){
-	current_state <- rep(NA,9)
+	current_state <- rep(-1,9)
 	turn = 0
 	while(check_finish(current_state) == 0){
 		if(first == 1){
