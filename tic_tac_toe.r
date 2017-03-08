@@ -22,6 +22,7 @@ sample.vec <- function(x, ...) x[sample(length(x), ...)]
 
 check_status <- function(state,
 						 turn){
+	state[state == -1] <- NA
 	state_mat <- matrix(state, 3, 3)
 	colsum1 <- colSums(state_mat)
 	rowsum1 <- rowSums(state_mat)
@@ -56,7 +57,7 @@ for(i in 1:60000){
 	# alpha <- 1/i^(1/2.5)
 	current_state <- rep(-1,9)
 	turn <- sample(0:1, 1)
-	backup_state <- list(NA,NA)
+	backup_state <- list(matrix(-2, ncol = 9),matrix(-2, ncol = 9))
 	while(is.null(check_status(current_state, turn))){
 	
 		## Update experience
@@ -88,11 +89,13 @@ for(i in 1:60000){
 			which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
 		}
 		decision <- learned_state[[1 + turn]][which_option, ]
-		last_move <- which(split(learned_state[[1 + turn]][, 1:9], 
-									matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-										nrow = nrow(learned_state[[1 + turn]]), 
-										byrow = TRUE)) 
-								%in% list(backup_state[[1 + turn]]))
+		# last_move <- which(split(learned_state[[1 + turn]][, 1:9], 
+									# matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
+										# nrow = nrow(learned_state[[1 + turn]]), 
+										# byrow = TRUE)) 
+								# %in% list(backup_state[[1 + turn]]))
+		last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), as.matrix(backup_state[[1 + turn]]))
+					
 		old_value <- learned_state[[1 + turn]][last_move, 10]
 		current_state <- decision[1:9]
 		current_status <- check_status(current_state, turn)
@@ -113,11 +116,14 @@ for(i in 1:60000){
 		turn <- abs(turn - 1)
 		
 		### Learning from opponent's move (learning defensive move)
-		oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
-									matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
-											nrow = nrow(learned_state[[1 + turn]]), 
-											byrow = TRUE)) 
-									%in% list(backup_state[[1 + turn]]))
+		# oppo_state <- which(split(learned_state[[1 + turn]][, 1:9], 
+									# matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), 
+											# nrow = nrow(learned_state[[1 + turn]]), 
+											# byrow = TRUE)) 
+									# %in% list(backup_state[[1 + turn]]))
+									
+		oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), as.matrix(backup_state[[1 + turn]]))
+						
 		oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
 		oppo_status <- check_status(current_state, turn)
 		if(is.null(oppo_status)){
