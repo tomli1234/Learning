@@ -94,7 +94,7 @@ for(i in 1:60000){
 										# nrow = nrow(learned_state[[1 + turn]]), 
 										# byrow = TRUE)) 
 								# %in% list(backup_state[[1 + turn]]))
-		last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), as.matrix(backup_state[[1 + turn]]))
+		last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))
 					
 		old_value <- learned_state[[1 + turn]][last_move, 10]
 		current_state <- decision[1:9]
@@ -122,7 +122,7 @@ for(i in 1:60000){
 											# byrow = TRUE)) 
 									# %in% list(backup_state[[1 + turn]]))
 									
-		oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), as.matrix(backup_state[[1 + turn]]))
+		oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))
 						
 		oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
 		oppo_status <- check_status(current_state, turn)
