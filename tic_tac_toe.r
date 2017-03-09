@@ -43,49 +43,6 @@ check_status <- function(state,
 	}
 }
 
-cppFunction('double check_status_C(NumericVector x, int turn){
-	NumericMatrix y(3 ,3, x.begin());
-	// Check row
-	for(int i=0; i<3; i++) {
-		int consec = 0;
-		for(int j=1; j<3; j++) {
-			if(y(i, j) > -1){
-				if(y(i, j) == y(i, j-1)) {
-					consec += 1;
-				}
-				if(consec == 2) {
-					return 1 - abs(y(i, j) - turn);
-				}
-			}
-		}
-	}
-	// Check column
-	for(int j=0; j<3; j++) {
-		int consec = 0;
-		for(int i=1; i<3; i++) {
-			if(y(i, j) > -1){
-				if(y(i, j) == y(i-1, j)) {
-					consec += 1;
-				}
-				if(consec == 2) {
-					return 1 - abs(y(i, j) - turn);
-				}
-			}
-		}
-	}
-	
-	return -1;
-}')
-current_state <- c(-1, 1, 0, -1, 0, 0, -1, 0, 0)
-check_status_C(current_state, 0)
-
-microbenchmark(
-check_status(current_state, turn)
-)
-
-cppFunction()
-
-
 ## Initialisation
 alpha <- 0.1
 random <- 0.1
