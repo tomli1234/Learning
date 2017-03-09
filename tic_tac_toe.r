@@ -7,10 +7,17 @@ rm(list=ls())
 
 library(microbenchmark)
 library(Rcpp)
+sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\learn_progress_C.cpp')
+sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_C.cpp')
+sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_2_C.cpp')
+sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\which_equal_C.cpp')
+
+# check_which_state_C(matrix(rep(-1, 9), ncol=9), c(1, 1,-1,-1,-1,-1,-1,-1,-1))
+# check_which_state_2_C(rbind(matrix(1, 8000,9),rep(2,9)), matrix(2, 3,9))
 
 possible_move <- function(current_state,
 						  turn){
-	possible_decision <- which(current_state == -1)
+	possible_decision <- which_equal_C(current_state, -1)
 	sapply(possible_decision, function(x) {
 			current_state[x] <- turn
 			return(state = current_state)	
@@ -36,13 +43,48 @@ check_status <- function(state,
 	}
 }
 
+cppFunction('double check_status_C(NumericVector x, int turn){
+	NumericMatrix y(3 ,3, x.begin());
+	// Check row
+	for(int i=0; i<3; i++) {
+		int consec = 0;
+		for(int j=1; j<3; j++) {
+			if(y(i, j) > -1){
+				if(y(i, j) == y(i, j-1)) {
+					consec += 1;
+				}
+				if(consec == 2) {
+					return 1 - abs(y(i, j) - turn);
+				}
+			}
+		}
+	}
+	// Check column
+	for(int j=0; j<3; j++) {
+		int consec = 0;
+		for(int i=1; i<3; i++) {
+			if(y(i, j) > -1){
+				if(y(i, j) == y(i-1, j)) {
+					consec += 1;
+				}
+				if(consec == 2) {
+					return 1 - abs(y(i, j) - turn);
+				}
+			}
+		}
+	}
+	
+	return -1;
+}')
+current_state <- c(-1, 1, 0, -1, 0, 0, -1, 0, 0)
+check_status_C(current_state, 0)
 
-sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\learn_progress_C.cpp')
-sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_C.cpp')
-sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_2_C.cpp')
+microbenchmark(
+check_status(current_state, turn)
+)
 
-# check_which_state_C(matrix(rep(-1, 9), ncol=9), c(1, 1,-1,-1,-1,-1,-1,-1,-1))
-# check_which_state_2_C(rbind(matrix(1, 8000,9),rep(2,9)), matrix(2, 3,9))
+cppFunction()
+
 
 ## Initialisation
 alpha <- 0.1
@@ -60,17 +102,9 @@ for(i in 1:60000){
 	backup_state <- list(matrix(-2, ncol = 9),matrix(-2, ncol = 9))
 	while(is.null(check_status(current_state, turn))){
 	
-		## Update experience
-		learned <- check_which_state_C(as.matrix(learned_state[[1 + turn]][, 1:9]), current_state)
-		
-		if(learned == 0){
-			learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
-												c(current_state, 0.5))
-		}
+		## Update experience--------------
 		x <- t(possible_move(current_state, turn = turn))
-
 		learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
-		
 		# If not seen possible move, then assign it with 0.5
 		if(sum(learned == 0) > 0){
 			learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
@@ -78,25 +112,22 @@ for(i in 1:60000){
 													nrow=sum(learned == 0)), 0.5))
 		}
 			
-		## Decision
-		option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
-					
+		## Decision----------------------
+		option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)			
 		decision_values <- learned_state[[1 + turn]][option, 10]
 		random_move <- runif(1) < random
 		if(random_move){
 			which_option <- sample(option, 1)
 		} else {
-			which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
+			which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
 		}
 		decision <- learned_state[[1 + turn]][which_option, ]
-
-		last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))
-					
+		last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))			
 		old_value <- learned_state[[1 + turn]][last_move, 10]
 		current_state <- decision[1:9]
 		current_status <- check_status(current_state, turn)
 		
-		## Learning
+		## Learning---------------------
 		### Current move
 		if(is.null(current_status)){
 			new_value <- decision[10]
@@ -112,8 +143,7 @@ for(i in 1:60000){
 		turn <- abs(turn - 1)
 		
 		### Learning from opponent's move (learning defensive move)
-		oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))
-						
+		oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))					
 		oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
 		oppo_status <- check_status(current_state, turn)
 		if(is.null(oppo_status)){
