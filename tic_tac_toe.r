@@ -44,79 +44,129 @@ check_status <- function(state,
 }
 
 ## Initialisation
-alpha <- 0.1
-random <- 0.1
-learned_state <- NULL
-learned_state[[1]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
-learned_state[[2]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
-progress <- NULL
-
-## Learning
-for(i in 1:60000){
-	# alpha <- 1/i^(1/2.5)
-	current_state <- rep(-1,9)
-	turn <- sample(0:1, 1)
-	backup_state <- list(matrix(-2, ncol = 9),matrix(-2, ncol = 9))
-	while(is.null(check_status(current_state, turn))){
-	
-		## Update experience--------------
-		x <- t(possible_move(current_state, turn = turn))
-		learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
-		# If not seen possible move, then assign it with 0.5
-		if(sum(learned == 0) > 0){
-			learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
-											cbind(matrix(x[learned == 0, ], 
-													nrow=sum(learned == 0)), 0.5))
-		}
-			
-		## Decision----------------------
-		option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)			
-		decision_values <- learned_state[[1 + turn]][option, 10]
-		random_move <- runif(1) < random
-		if(random_move){
-			which_option <- sample(option, 1)
-		} else {
-			which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
-		}
-		decision <- learned_state[[1 + turn]][which_option, ]
-		last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))			
-		old_value <- learned_state[[1 + turn]][last_move, 10]
-		current_state <- decision[1:9]
-		current_status <- check_status(current_state, turn)
-		
-		## Learning---------------------
-		### Current move
-		if(is.null(current_status)){
-			new_value <- decision[10]
-			learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
-		} else {
-			new_value <- current_status
-			learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
-			learned_state[[1 + turn]][which_option, 10] <- new_value
-		}
-		
-		backup_state[[1 + turn]] <- current_state
-		
-		turn <- abs(turn - 1)
-		
-		### Learning from opponent's move (learning defensive move)
-		oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))					
-		oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
-		oppo_status <- check_status(current_state, turn)
-		if(is.null(oppo_status)){
-			# new_value <- decision[10]
-			# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
-		} else {
-			new_value <- oppo_status
-			learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + 0.5 * (new_value - oppo_value)
-			print(learned_state[[1 + turn]][oppo_state, 10] )
-		}	
-				
+learning <- function(alpha = 0.1, random = 0.1,
+					 rounds,
+					 learned_state = NULL) {
+	if(is.null(learned_state)) {
+		learned_state <- NULL
+		learned_state[[1]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
+		learned_state[[2]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
 	}
-	print(paste0(i,', ', nrow(learned_state[[1]])))
-	progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
-	plot(progress, type='l')
+	progress <- NULL
+
+	## Learning
+	for(i in 1:rounds){
+		# alpha <- 1/i^(1/2.5)
+		current_state <- rep(-1,9)
+		turn <- sample(0:1, 1)
+		backup_state <- list(matrix(-2, ncol = 9),matrix(-2, ncol = 9))
+		while(is.null(check_status(current_state, turn))){
+		
+			## Update experience--------------
+			x <- t(possible_move(current_state, turn = turn))
+			learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
+			# If not seen possible move, then assign it with 0.5
+			if(sum(learned == 0) > 0){
+				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
+												cbind(matrix(x[learned == 0, ], 
+														nrow=sum(learned == 0)), 0.5))
+			}
+				
+			## Decision----------------------
+			option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)			
+			decision_values <- learned_state[[1 + turn]][option, 10]
+			random_move <- runif(1) < random
+			if(random_move){
+				which_option <- sample(option, 1)
+			} else {
+				which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
+			}
+			decision <- learned_state[[1 + turn]][which_option, ]
+			last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))			
+			old_value <- learned_state[[1 + turn]][last_move, 10]
+			current_state <- decision[1:9]
+			current_status <- check_status(current_state, turn)
+			
+			## Learning---------------------
+			### Current move
+			if(is.null(current_status)){
+				new_value <- decision[10]
+				learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
+			} else {
+				new_value <- current_status
+				learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
+				learned_state[[1 + turn]][which_option, 10] <- new_value
+			}
+			
+			backup_state[[1 + turn]] <- current_state
+			
+			turn <- abs(turn - 1)
+			
+			### Learning from opponent's move (learning defensive move)
+			oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))					
+			oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
+			oppo_status <- check_status(current_state, turn)
+			if(is.null(oppo_status)){
+				# new_value <- decision[10]
+				# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
+			} else {
+				new_value <- oppo_status
+				learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + 0.5 * (new_value - oppo_value)
+				# print(learned_state[[1 + turn]][oppo_state, 10] )
+			}	
+					
+		}
+		# print(paste0(i,', ', nrow(learned_state[[1]])))
+		# progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
+		# plot(progress, type='l')
+	}
+	return(learned_state)
 }
+
+# Parallel learning (Shadow clone learning)
+library(parallel)
+no_cores <- detectCores() - 1
+
+learners <- lapply(1:2, function(x) NULL)
+for(j in 1:10) {
+	learners <- lapply(1:2, function(x) {
+					learning(rounds = 200,
+							 learned_state = learners[[x]])	
+				}
+			)
+			
+	### Need to embed the cpp functions into a package first
+	# see http://stackoverflow.com/questions/38518387/using-rcpp-inside-parlappy-within-the-parallel-r-package
+	# cl <- makeCluster(no_cores)		
+	# clusterExport(cl, list("learning","learners","check_status","possible_move","sample.vec"))
+	# learners <- parLapply(cl, 
+					# 1:2, 
+					# function(x) {
+					# library(Rcpp)
+					# sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_C.cpp')
+					# sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_2_C.cpp')
+					# sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\which_equal_C.cpp')
+					# learning(rounds = 100,
+							 # learned_state = learners[[x]])	
+				# }
+			# )	
+	# stopCluster(cl)
+	
+	# Combine learners
+	learned_state_all <- NULL
+	for(i in 1:2) {
+		same <- check_which_state_2_C(as.matrix(learners[[1]][[i]][, -10]), as.matrix(learners[[2]][[i]][, -10]))								
+		learned_1 <- learners[[1]][[i]][same, 10]
+		learned_2 <- learners[[2]][[i]][which(same > 0), 10]
+		learners[[1]][[i]][same, 10] <- apply(cbind(learned_1,learned_2), 1, mean)
+		disjoint <-	which_equal_C(same, 0)		
+		learned_state_all[[i]] <- rbind(learners[[1]][[i]], learners[[2]][[i]][disjoint,])	
+	}
+	learners <- lapply(1:2, function(x) learned_state_all)
+}
+
+learners <- learning(rounds = 2000, learned_state = NULL)
+
 
 
 check_finish <- function(state){
@@ -164,6 +214,7 @@ visualise_game <- function(current_state){
 }		
 # visualise_game(current_state)
 	
+learned_state <- learners[[1]]
 play <- function(first){
 	current_state <- rep(-1,9)
 	turn = 0
