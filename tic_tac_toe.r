@@ -170,7 +170,7 @@ for(j in 1:10) {
 	}	
 }
 
-learners <- learning(rounds = 2000, learned_state = NULL)
+learner_2 <- learning(rounds = 2000, learned_state = NULL)
 
 
 
@@ -260,6 +260,56 @@ play <- function(first){
 	check_finish(current_state)
 }
 play(first=0)
+
+
+
+# Test 
+test_play <- function(first, player1, player0){
+	current_state <- rep(-1,9)
+	learned_state[[1]] <- player0
+	learned_state[[2]] <- player1
+	
+	turn = first
+		while(is.null(check_status(current_state, turn))){
+		
+			## Update experience--------------
+			x <- t(possible_move(current_state, turn = turn))
+			learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
+			# If not seen possible move, then assign it with 0.5
+			if(sum(learned == 0) > 0){
+				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
+												cbind(matrix(x[learned == 0, ], 
+														nrow=sum(learned == 0)), 0.5))
+			}
+				
+			## Decision----------------------
+			option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)			
+			decision_values <- learned_state[[1 + turn]][option, 10]
+			which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
+			decision <- learned_state[[1 + turn]][which_option, ]
+			current_state <- decision[1:9]
+			# current_status <- check_status(current_state, turn)
+			turn <- abs(turn - 1)
+		}	
+	return(check_finish(current_state))
+}
+
+test_play_loop <- function(rounds = 1000, player1, player0) {
+	first <- sample(0:1, 1)
+	result <- NULL
+	for(i in 1:rounds) {
+		result_i <- test_play(first = first, 
+					player1 = player1, 
+					player0 = player0)
+		result <- c(result, result_i)
+	}
+	table(result)
+}
+test_play_loop(rounds = 100, 
+				player1 = learner_2[[2]], 
+				player0 = learners[[1]][[1]])
+				
+				
 
 library(animation)
 # Animation
