@@ -127,9 +127,10 @@ learning <- function(alpha = 0.1, random = 0.1,
 library(parallel)
 no_cores <- detectCores() - 1
 
-learners <- lapply(1:2, function(x) NULL)
+learner_num <- 3
+learners <- lapply(1:learner_num, function(x) NULL)
 for(j in 1:10) {
-	learners <- lapply(1:2, function(x) {
+	learners <- lapply(1:learner_num, function(x) {
 					learning(rounds = 200,
 							 learned_state = learners[[x]])	
 				}
@@ -154,15 +155,19 @@ for(j in 1:10) {
 	
 	# Combine learners
 	learned_state_all <- NULL
-	for(i in 1:2) {
-		same <- check_which_state_2_C(as.matrix(learners[[1]][[i]][, -10]), as.matrix(learners[[2]][[i]][, -10]))								
-		learned_1 <- learners[[1]][[i]][same, 10]
-		learned_2 <- learners[[2]][[i]][which(same > 0), 10]
-		learners[[1]][[i]][same, 10] <- apply(cbind(learned_1,learned_2), 1, mean)
-		disjoint <-	which_equal_C(same, 0)		
-		learned_state_all[[i]] <- rbind(learners[[1]][[i]], learners[[2]][[i]][disjoint,])	
-	}
-	learners <- lapply(1:2, function(x) learned_state_all)
+	k <- 2
+	while(k <= learner_num) {
+		for(i in 1:2) {
+			same <- check_which_state_2_C(as.matrix(learners[[k-1]][[i]][, -10]), as.matrix(learners[[k]][[i]][, -10]))								
+			learned_1 <- learners[[k-1]][[i]][same, 10]
+			learned_2 <- learners[[k]][[i]][which(same > 0), 10]
+			learners[[k-1]][[i]][same, 10] <- apply(cbind(learned_1,learned_2), 1, mean)
+			disjoint <-	which_equal_C(same, 0)		
+			learned_state_all[[i]] <- rbind(learners[[k-1]][[i]], learners[[k]][[i]][disjoint,])	
+		}
+		learners <- lapply(1:learner_num, function(x) learned_state_all)
+		k <- k + 1
+	}	
 }
 
 learners <- learning(rounds = 2000, learned_state = NULL)
@@ -254,7 +259,7 @@ play <- function(first){
 	print(g)
 	check_finish(current_state)
 }
-play(first=1)
+play(first=0)
 
 library(animation)
 # Animation
