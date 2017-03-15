@@ -159,8 +159,8 @@ shadow_clone <- function(learner_num, sub_rounds) {
 }
 
 microbenchmark(
-learners <- shadow_clone(learner_num = 10, sub_rounds = 1000),
-learner_2 <- learning(rounds = 20000, learned_state = NULL),
+learners <- shadow_clone(learner_num = 3, sub_rounds = 300),
+learner_2 <- learning(rounds = 1000, learned_state = NULL),
 times = 1)
 
 
