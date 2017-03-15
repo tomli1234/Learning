@@ -159,8 +159,8 @@ shadow_clone <- function(learner_num, sub_rounds) {
 }
 
 microbenchmark(
-learners <- shadow_clone(learner_num = 10, sub_rounds = 1000),
-learner_2 <- learning(rounds = 20000, learned_state = NULL),
+learners <- shadow_clone(learner_num = 10, sub_rounds = 2000),
+learner_2 <- learning(rounds = 40000, learned_state = NULL),
 times = 1)
 
 
@@ -258,6 +258,7 @@ play(first=0)
 # Test 
 test_play <- function(first, player1, player0){
 	current_state <- rep(-1,9)
+	learned_state <- NULL
 	learned_state[[1]] <- player0
 	learned_state[[2]] <- player1
 	
@@ -312,7 +313,7 @@ saveGIF(for(i in 0:5){
 	movie.name="C:\\Users\\tomli\\Desktop\\tic_tac_toe.gif")
 
 
-current_state <- c(0, NA, 1, NA, NA, NA, NA, NA, 1)
+current_state <- c(-1, -1, -1, -1, -1, -1, -1, -1, -1)
 turn = 0
 
 decision
