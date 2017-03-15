@@ -121,13 +121,15 @@ learning <- function(alpha = 0.1, random = 0.1,
 library(parallel)
 
 shadow_clone <- function(learner_num, sub_rounds) {
+	envir_1 <- environment()
 	no_cores <- detectCores() - 1
 	cl <- makeCluster(no_cores)		
-	clusterExport(cl, list("learning","check_status","possible_move","sample.vec","which_equal_C","check_which_state_2_C"))
+	clusterExport(cl, list("learning","check_status","possible_move","sample.vec","which_equal_C","check_which_state_2_C"),
+					envir = .GlobalEnv)
 	learners <- lapply(1:learner_num, function(x) NULL)
 	for(j in 1:10) {
 
-	clusterExport(cl, list("learners"))
+	clusterExport(cl, list("learners"), envir = envir_1) # set envir as "inside the function" since "learners" not defined in global
 		learners <- parLapply(cl, 
 						1:learner_num, 
 						function(x) {
@@ -157,8 +159,8 @@ shadow_clone <- function(learner_num, sub_rounds) {
 }
 
 microbenchmark(
-learners <- shadow_clone(learner_num = 10, sub_rounds = 500),
-# learner_2 <- learning(rounds = 10000, learned_state = NULL),
+learners <- shadow_clone(learner_num = 10, sub_rounds = 1000),
+learner_2 <- learning(rounds = 20000, learned_state = NULL),
 times = 1)
 
 
