@@ -7,13 +7,7 @@ rm(list=ls())
 
 library(microbenchmark)
 library(Rcpp)
-sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\learn_progress_C.cpp')
-sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_C.cpp')
-sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_2_C.cpp')
-sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\which_equal_C.cpp')
-
-# check_which_state_C(matrix(rep(-1, 9), ncol=9), c(1, 1,-1,-1,-1,-1,-1,-1,-1))
-# check_which_state_2_C(rbind(matrix(1, 8000,9),rep(2,9)), matrix(2, 3,9))
+library(TTTrcpp)
 
 possible_move <- function(current_state,
 						  turn){
@@ -125,53 +119,49 @@ learning <- function(alpha = 0.1, random = 0.1,
 
 # Parallel learning (Shadow clone learning)
 library(parallel)
-no_cores <- detectCores() - 1
 
-learner_num <- 3
-learners <- lapply(1:learner_num, function(x) NULL)
-for(j in 1:10) {
-	learners <- lapply(1:learner_num, function(x) {
-					learning(rounds = 200,
-							 learned_state = learners[[x]])	
-				}
-			)
-			
-	### Need to embed the cpp functions into a package first
-	# see http://stackoverflow.com/questions/38518387/using-rcpp-inside-parlappy-within-the-parallel-r-package
-	# cl <- makeCluster(no_cores)		
-	# clusterExport(cl, list("learning","learners","check_status","possible_move","sample.vec"))
-	# learners <- parLapply(cl, 
-					# 1:2, 
-					# function(x) {
-					# library(Rcpp)
-					# sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_C.cpp')
-					# sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\check_which_state_2_C.cpp')
-					# sourceCpp('C:\\Users\\tomli\\Desktop\\myRcpp\\which_equal_C.cpp')
-					# learning(rounds = 100,
-							 # learned_state = learners[[x]])	
-				# }
-			# )	
-	# stopCluster(cl)
-	
-	# Combine learners
-	learned_state_all <- NULL
-	k <- 2
-	while(k <= learner_num) {
-		for(i in 1:2) {
-			same <- check_which_state_2_C(as.matrix(learners[[k-1]][[i]][, -10]), as.matrix(learners[[k]][[i]][, -10]))								
-			learned_1 <- learners[[k-1]][[i]][same, 10]
-			learned_2 <- learners[[k]][[i]][which(same > 0), 10]
-			learners[[k-1]][[i]][same, 10] <- apply(cbind(learned_1,learned_2), 1, mean)
-			disjoint <-	which_equal_C(same, 0)		
-			learned_state_all[[i]] <- rbind(learners[[k-1]][[i]], learners[[k]][[i]][disjoint,])	
-		}
-		learners <- lapply(1:learner_num, function(x) learned_state_all)
-		k <- k + 1
-	}	
+shadow_clone <- function(learner_num, sub_rounds) {
+	no_cores <- detectCores() - 1
+	cl <- makeCluster(no_cores)		
+	clusterExport(cl, list("learning","check_status","possible_move","sample.vec","which_equal_C","check_which_state_2_C"))
+	learners <- lapply(1:learner_num, function(x) NULL)
+	for(j in 1:10) {
+
+		### Need to embed the cpp functions into a package first
+		# see http://stackoverflow.com/questions/38518387/using-rcpp-inside-parlappy-within-the-parallel-r-package
+		clusterExport(cl, list("learners"))
+		learners <- parLapply(cl, 
+						1:learner_num, 
+						function(x) {
+						learning(rounds = sub_rounds,
+								 learned_state = learners[[x]])	
+					}
+				)	
+		
+		# Combine learners
+		learned_state_all <- NULL
+		k <- 2
+		while(k <= learner_num) {
+			for(i in 1:2) {
+				same <- check_which_state_2_C(as.matrix(learners[[k-1]][[i]][, -10]), as.matrix(learners[[k]][[i]][, -10]))								
+				learned_1 <- learners[[k-1]][[i]][same, 10]
+				learned_2 <- learners[[k]][[i]][which(same > 0), 10]
+				learners[[k-1]][[i]][same, 10] <- apply(cbind(learned_1,learned_2), 1, mean)
+				disjoint <-	which_equal_C(same, 0)		
+				learned_state_all[[i]] <- rbind(learners[[k-1]][[i]], learners[[k]][[i]][disjoint,])	
+			}
+			learners <- lapply(1:learner_num, function(x) learned_state_all)
+			k <- k + 1
+		}	
+	}
+	stopCluster(cl)
+	return(learners)
 }
 
-learner_2 <- learning(rounds = 2000, learned_state = NULL)
-
+microbenchmark(
+learners <- shadow_clone(learner_num = 3, sub_rounds = 40),
+learner_2 <- learning(rounds = 2000, learned_state = NULL),
+times = 5)
 
 
 check_finish <- function(state){
@@ -219,7 +209,7 @@ visualise_game <- function(current_state){
 }		
 # visualise_game(current_state)
 	
-learned_state <- learners[[1]]
+learned_state <- learner_2
 play <- function(first){
 	current_state <- rep(-1,9)
 	turn = 0
@@ -295,9 +285,9 @@ test_play <- function(first, player1, player0){
 }
 
 test_play_loop <- function(rounds = 1000, player1, player0) {
-	first <- sample(0:1, 1)
 	result <- NULL
 	for(i in 1:rounds) {
+		first <- sample(0:1, 1)
 		result_i <- test_play(first = first, 
 					player1 = player1, 
 					player0 = player0)
@@ -305,11 +295,10 @@ test_play_loop <- function(rounds = 1000, player1, player0) {
 	}
 	table(result)
 }
-test_play_loop(rounds = 100, 
+test_play_loop(rounds = 1000, 
 				player1 = learner_2[[2]], 
 				player0 = learners[[1]][[1]])
-				
-				
+
 
 library(animation)
 # Animation
