@@ -127,9 +127,7 @@ shadow_clone <- function(learner_num, sub_rounds) {
 	learners <- lapply(1:learner_num, function(x) NULL)
 	for(j in 1:10) {
 
-		### Need to embed the cpp functions into a package first
-		# see http://stackoverflow.com/questions/38518387/using-rcpp-inside-parlappy-within-the-parallel-r-package
-		clusterExport(cl, list("learners"))
+	clusterExport(cl, list("learners"))
 		learners <- parLapply(cl, 
 						1:learner_num, 
 						function(x) {
@@ -159,9 +157,9 @@ shadow_clone <- function(learner_num, sub_rounds) {
 }
 
 microbenchmark(
-learners <- shadow_clone(learner_num = 3, sub_rounds = 40),
-learner_2 <- learning(rounds = 2000, learned_state = NULL),
-times = 5)
+learners <- shadow_clone(learner_num = 10, sub_rounds = 500),
+# learner_2 <- learning(rounds = 10000, learned_state = NULL),
+times = 1)
 
 
 check_finish <- function(state){
@@ -209,7 +207,7 @@ visualise_game <- function(current_state){
 }		
 # visualise_game(current_state)
 	
-learned_state <- learner_2
+
 play <- function(first){
 	current_state <- rep(-1,9)
 	turn = 0
@@ -249,6 +247,8 @@ play <- function(first){
 	print(g)
 	check_finish(current_state)
 }
+learned_state <- learners[[1]]
+learned_state <- learner_2
 play(first=0)
 
 
