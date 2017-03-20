@@ -105,7 +105,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 				# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
 			} else {
 				new_value <- oppo_status
-				learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + 0.5 * (new_value - oppo_value)
+				learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
 				# print(learned_state[[1 + turn]][oppo_state, 10] )
 			}	
 					
@@ -159,8 +159,8 @@ shadow_clone <- function(learner_num, sub_rounds) {
 }
 
 microbenchmark(
-learners <- shadow_clone(learner_num = 3, sub_rounds = 300),
-learner_2 <- learning(rounds = 1000, learned_state = NULL),
+learners <- shadow_clone(learner_num = 4, sub_rounds = 5000),
+# learner_2 <- learning(rounds = 10000, learned_state = NULL),
 times = 1)
 
 
