@@ -21,44 +21,28 @@ possible_move <- function(current_state,
 
 sample.vec <- function(x, ...) x[sample(length(x), ...)]
 
-check_status <- function(state,
-						 turn){
-	state[state == -1] <- NA
-	state_mat <- matrix(state, 3, 3)
-	colsum1 <- colSums(state_mat)
-	rowsum1 <- rowSums(state_mat)
-	diagsum1 <- c(sum(diag(state_mat)), sum(diag(state_mat[nrow(state_mat):1, ])))
-	if(any(c(colsum1, rowsum1, diagsum1) == 3, na.rm=TRUE)){
-		return(turn)  # Player 1 Wins
-	} else if(any(c(colsum1, rowsum1, diagsum1) == 0, na.rm=TRUE)){
-		return(1 - turn) # Player 1 Loses
-	} else if(any(is.na(state), na.rm=TRUE) == FALSE){
-		return(1 - turn) # Draw
-	}
-}
-
 ## Initialisation
 learning <- function(alpha = 0.1, random = 0.1,
 					 rounds,
 					 learned_state = NULL) {
 	if(is.null(learned_state)) {
 		learned_state <- NULL
-		learned_state[[1]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
-		learned_state[[2]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
+		learned_state[[1]] <- matrix(c(rep(-1, 25), 0.5), 1, 26)
+		learned_state[[2]] <- matrix(c(rep(-1, 25), 0.5), 1, 26)
 	}
 	progress <- NULL
 
 	## Learning
 	for(i in 1:rounds){
 		# alpha <- 1/i^(1/2.5)
-		current_state <- rep(-1,9)
+		current_state <- rep(-1,25)
 		turn <- sample(0:1, 1)
-		backup_state <- list(matrix(-2, ncol = 9),matrix(-2, ncol = 9))
-		while(is.null(check_status(current_state, turn))){
+		backup_state <- list(matrix(-2, ncol = 25),matrix(-2, ncol = 25))
+		while(check_status_C(current_state, turn) == -1){
 		
 			## Update experience--------------
 			x <- t(possible_move(current_state, turn = turn))
-			learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
+			learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), x)
 			# If not seen possible move, then assign it with 0.5
 			if(sum(learned == 0) > 0){
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
@@ -67,8 +51,8 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}
 				
 			## Decision----------------------
-			option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)			
-			decision_values <- learned_state[[1 + turn]][option, 10]
+			option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), x)			
+			decision_values <- learned_state[[1 + turn]][option, 26]
 			random_move <- runif(1) < random
 			if(random_move){
 				which_option <- sample(option, 1)
@@ -76,20 +60,20 @@ learning <- function(alpha = 0.1, random = 0.1,
 				which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
 			}
 			decision <- learned_state[[1 + turn]][which_option, ]
-			last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))			
-			old_value <- learned_state[[1 + turn]][last_move, 10]
-			current_state <- decision[1:9]
+			last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), matrix(backup_state[[1 + turn]], ncol = 25))			
+			old_value <- learned_state[[1 + turn]][last_move, 26]
+			current_state <- decision[1:25]
 			current_status <- check_status_C(current_state, turn)
 			
 			## Learning---------------------
 			### Current move
 			if(current_status == -1){
-				new_value <- decision[10]
-				learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
+				new_value <- decision[26]
+				learned_state[[1 + turn]][last_move, 26] <- old_value + alpha * (new_value - old_value)
 			} else {
 				new_value <- current_status
-				learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
-				learned_state[[1 + turn]][which_option, 10] <- new_value
+				learned_state[[1 + turn]][last_move, 26] <- old_value + alpha * (new_value - old_value)
+				learned_state[[1 + turn]][which_option, 26] <- new_value
 			}
 			
 			backup_state[[1 + turn]] <- current_state
@@ -97,22 +81,22 @@ learning <- function(alpha = 0.1, random = 0.1,
 			turn <- abs(turn - 1)
 			
 			### Learning from opponent's move (learning defensive move)
-			oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))					
-			oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
+			oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), matrix(backup_state[[1 + turn]], ncol = 25))					
+			oppo_value <- learned_state[[1 + turn]][oppo_state, 26]
 			oppo_status <- check_status_C(current_state, turn)
 			if(oppo_status == -1){
 				# new_value <- decision[10]
 				# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
 			} else {
 				new_value <- oppo_status
-				learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
+				learned_state[[1 + turn]][oppo_state, 26] <- oppo_value + alpha * (new_value - oppo_value)
 				# print(learned_state[[1 + turn]][oppo_state, 10] )
 			}	
 					
 		}
-		# print(paste0(i,', ', nrow(learned_state[[1]])))
-		# progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
-		# plot(progress, type='l')
+		print(paste0(i,', ', nrow(learned_state[[1]])))
+		progress <- c(progress, learn_progress_C(learned_state[[1]][,26]))
+		plot(progress, type='l')
 	}
 	return(learned_state)
 }
@@ -159,18 +143,18 @@ shadow_clone <- function(learner_num, sub_rounds) {
 }
 
 microbenchmark(
-learners <- shadow_clone(learner_num = 4, sub_rounds = 5000),
-# learner_2 <- learning(rounds = 10000, learned_state = NULL),
+learners <- shadow_clone(learner_num = 3, sub_rounds = 100),
+learner_2 <- learning(rounds = 30, learned_state = NULL),
 times = 1)
 
 
 check_finish <- function(state){
 	state[state == -1] <- NA
-	state_mat <- matrix(state, 3, 3)
+	state_mat <- matrix(state, 5, 5)
 	colsum1 <- colSums(state_mat)
 	rowsum1 <- rowSums(state_mat)
 	diagsum1 <- c(sum(diag(state_mat)), sum(diag(state_mat[nrow(state_mat):1, ])))
-	if(any(c(colsum1, rowsum1, diagsum1) == 3, na.rm=TRUE)){
+	if(any(c(colsum1, rowsum1, diagsum1) == 5, na.rm=TRUE)){
 		return('Player 1 wins') # Win
 	} else if(any(c(colsum1, rowsum1, diagsum1) == 0, na.rm=TRUE)){
 		return('Player 0 wins') # Lose
@@ -195,7 +179,7 @@ blank_theme <- theme_minimal()+
       )
 visualise_game <- function(current_state){	
 	current_state[current_state == -1] <- NA
-	visual_data <- data.frame(expand.grid(x = 1:3, y = 1:3), current_state)
+	visual_data <- data.frame(expand.grid(x = 1:5, y = 1:5), current_state)
 	visual_data$current_state <- ifelse(visual_data$current_state == 1, 'O', 'X')
 	ggplot(visual_data, aes(x = x, y = y)) +
 		geom_vline(xintercept = seq(0.5, 3.5, 1))+
@@ -211,42 +195,42 @@ visualise_game <- function(current_state){
 	
 
 play <- function(first){
-	current_state <- rep(-1,9)
+	current_state <- rep(-1,25)
 	turn = 0
 	while(check_finish(current_state) == 0){
 		if(first == 1){
-			print(matrix(current_state, 3, 3))
-			print(visualise_game(current_state))
+			print(matrix(current_state, 5, 5))
+			# print(visualise_game(current_state))
 			player_move <- readline('Please select a move\n')
 			current_state[as.numeric(player_move)] <- 1
 			if(check_finish(current_state) != 0) {break}
 		}	
 		x <- t(possible_move(current_state, turn = turn))
-		learned <- split(x, row(x)) %in% split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE))
+		learned <- split(x, row(x)) %in% split(learned_state[[1 + turn]][, 1:25], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 25), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE))
 		if(sum(learned == FALSE) != 0){
 			learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], cbind(matrix(x[learned == FALSE, ], nrow=sum(learned == FALSE)), 0.5))
 		}
-		option <- which(split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE)) %in% split(x, row(x)) )
-		decision_values <- learned_state[[1 + turn]][option, 10]
+		option <- which(split(learned_state[[1 + turn]][, 1:25], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 25), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE)) %in% split(x, row(x)) )
+		decision_values <- learned_state[[1 + turn]][option, 26]
 		which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
 		decision <- learned_state[[1 + turn]][which_option, ]
-		current_state <- decision[1:9]
+		current_state <- decision[1:25]
 		if(first == 0){
-			print(matrix(current_state, 3, 3))
-			print(visualise_game(current_state))
+			print(matrix(current_state, 5, 5))
+			# print(visualise_game(current_state))
 			player_move <- readline('Please select a move\n')
 			current_state[as.numeric(player_move)] <- 1
 		}
 	}		
-	g <- visualise_game(current_state)
-	if(check_finish(current_state) == 'Player 1 wins'){
-		g <- g + annotate('text', x = 2, y = 2, label = 'O wins', size = 20, colour = 'skyblue2')
-	} else if(check_finish(current_state) == 'Player 0 wins'){
-		g <- g + annotate('text', x = 2, y = 2, label = 'X wins', size = 20, colour = 'skyblue2')		
-	} else {
-		g <- g + annotate('text', x = 2, y = 2, label = 'Draw', size = 20, colour = 'skyblue2')				
-	}
-	print(g)
+	# g <- visualise_game(current_state)
+	# if(check_finish(current_state) == 'Player 1 wins'){
+		# g <- g + annotate('text', x = 2, y = 2, label = 'O wins', size = 20, colour = 'skyblue2')
+	# } else if(check_finish(current_state) == 'Player 0 wins'){
+		# g <- g + annotate('text', x = 2, y = 2, label = 'X wins', size = 20, colour = 'skyblue2')		
+	# } else {
+		# g <- g + annotate('text', x = 2, y = 2, label = 'Draw', size = 20, colour = 'skyblue2')				
+	# }
+	# print(g)
 	check_finish(current_state)
 }
 learned_state <- learners[[1]]
