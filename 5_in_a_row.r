@@ -79,9 +79,11 @@ learning <- function(alpha = 0.1, random = 0.1,
 			last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))			
 			old_value <- learned_state[[1 + turn]][last_move, 10]
 			current_state <- decision[1:9]
+			current_status <- check_status_C(current_state, turn)
 			
 			## Learning---------------------
 			### Current move
+			if(current_status == -1){
 				new_value <- decision[10]
 				learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
 			} else {
@@ -97,6 +99,8 @@ learning <- function(alpha = 0.1, random = 0.1,
 			### Learning from opponent's move (learning defensive move)
 			oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))					
 			oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
+			oppo_status <- check_status_C(current_state, turn)
+			if(oppo_status == -1){
 				# new_value <- decision[10]
 				# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
 			} else {
@@ -120,6 +124,7 @@ shadow_clone <- function(learner_num, sub_rounds) {
 	envir_1 <- environment()
 	no_cores <- detectCores() - 1
 	cl <- makeCluster(no_cores)		
+	clusterExport(cl, list("learning","check_status","possible_move","sample.vec","which_equal_C","check_which_state_2_C","check_status_C"),
 					envir = .GlobalEnv)
 	learners <- lapply(1:learner_num, function(x) NULL)
 	for(j in 1:10) {
