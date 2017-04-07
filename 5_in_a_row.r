@@ -43,15 +43,18 @@ learning <- function(alpha = 0.1, random = 0.1,
 			## Update experience--------------
 			x <- t(possible_move(current_state, turn = turn))
 			learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), x)
+			option <- learned[learned!=0]
 			# If not seen possible move, then assign it with 0.5
 			if(sum(learned == 0) > 0){
+				option <- c(option, nrow(learned_state[[1 + turn]]) + 1:sum(learned == 0))
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
 												cbind(matrix(x[learned == 0, ], 
 														nrow=sum(learned == 0)), 0.5))
 			}
 				
 			## Decision----------------------
-			option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), x)			
+			# option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), x)			
+			
 			decision_values <- learned_state[[1 + turn]][option, 26]
 			random_move <- runif(1) < random
 			if(random_move){
@@ -108,7 +111,7 @@ shadow_clone <- function(learner_num, sub_rounds) {
 	envir_1 <- environment()
 	no_cores <- detectCores() - 1
 	cl <- makeCluster(no_cores)		
-	clusterExport(cl, list("learning","check_status","possible_move","sample.vec","which_equal_C","check_which_state_2_C","check_status_C"),
+	clusterExport(cl, list("learning","possible_move","sample.vec","which_equal_C","check_which_state_2_C","check_status_C"),
 					envir = .GlobalEnv)
 	learners <- lapply(1:learner_num, function(x) NULL)
 	for(j in 1:10) {
@@ -127,10 +130,10 @@ shadow_clone <- function(learner_num, sub_rounds) {
 		k <- 2
 		while(k <= learner_num) {
 			for(i in 1:2) {
-				same <- check_which_state_2_C(as.matrix(learners[[k-1]][[i]][, -10]), as.matrix(learners[[k]][[i]][, -10]))								
-				learned_1 <- learners[[k-1]][[i]][same, 10]
-				learned_2 <- learners[[k]][[i]][which(same > 0), 10]
-				learners[[k-1]][[i]][same, 10] <- apply(cbind(learned_1,learned_2), 1, mean)
+				same <- check_which_state_2_C(as.matrix(learners[[k-1]][[i]][, -26]), as.matrix(learners[[k]][[i]][, -26]))								
+				learned_1 <- learners[[k-1]][[i]][same, 26]
+				learned_2 <- learners[[k]][[i]][which(same > 0), 26]
+				learners[[k-1]][[i]][same, 26] <- apply(cbind(learned_1,learned_2), 1, mean)
 				disjoint <-	which_equal_C(same, 0)		
 				learned_state_all[[i]] <- rbind(learners[[k-1]][[i]], learners[[k]][[i]][disjoint,])	
 			}
@@ -143,9 +146,9 @@ shadow_clone <- function(learner_num, sub_rounds) {
 }
 
 microbenchmark(
-learners <- shadow_clone(learner_num = 3, sub_rounds = 100),
-learner_2 <- learning(rounds = 30, learned_state = NULL),
-times = 1)
+# learners <- shadow_clone(learner_num = 3, sub_rounds = 100),
+learner_2 <- learning(rounds = 20, learned_state = NULL),
+times = 5)
 
 
 check_finish <- function(state){
