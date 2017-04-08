@@ -38,6 +38,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 		current_state <- rep(-1,25)
 		turn <- sample(0:1, 1)
 		backup_state <- list(matrix(-2, ncol = 25),matrix(-2, ncol = 25))
+		which_option_hist <- list(NULL,NULL)
 		while(check_status_C(current_state, turn) == -1){
 		
 			## Update experience--------------
@@ -52,9 +53,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 														nrow=sum(learned == 0)), 0.5))
 			}
 				
-			## Decision----------------------
-			# option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), x)			
-			
+			## Decision----------------------	
 			decision_values <- learned_state[[1 + turn]][option, 26]
 			random_move <- runif(1) < random
 			if(random_move){
@@ -62,8 +61,10 @@ learning <- function(alpha = 0.1, random = 0.1,
 			} else {
 				which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
 			}
+			which_option_hist[[1 + turn]] <- c(which_option_hist[[1 + turn]], which_option)
 			decision <- learned_state[[1 + turn]][which_option, ]
-			last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), matrix(backup_state[[1 + turn]], ncol = 25))			
+			last_move <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]]) - 1]
+			
 			old_value <- learned_state[[1 + turn]][last_move, 26]
 			current_state <- decision[1:25]
 			current_status <- check_status_C(current_state, turn)
@@ -84,7 +85,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 			turn <- abs(turn - 1)
 			
 			### Learning from opponent's move (learning defensive move)
-			oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), matrix(backup_state[[1 + turn]], ncol = 25))					
+			oppo_state <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]])]
 			oppo_value <- learned_state[[1 + turn]][oppo_state, 26]
 			oppo_status <- check_status_C(current_state, turn)
 			if(oppo_status == -1){
@@ -147,8 +148,8 @@ shadow_clone <- function(learner_num, sub_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 3, sub_rounds = 100),
-learner_2 <- learning(rounds = 20, learned_state = NULL),
-times = 5)
+learner_2 <- learning(rounds = 300, learned_state = NULL),
+times = 1)
 
 
 check_finish <- function(state){
