@@ -92,9 +92,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 			### Learning from opponent's move (learning defensive move)
 			oppo_state <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]])]
 			oppo_value <- learned_state[[1 + turn]][oppo_state, 26]
-			oppo_status <- ifelse(current_status == 1, 0, ifelse(current_status == 0, 1, -1))
-			
-			
+			oppo_status <- check_status_C(current_state, turn)
 			if(oppo_status == -1){
 				# new_value <- decision[10]
 				# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
@@ -156,7 +154,7 @@ shadow_clone <- function(learner_num, sub_rounds) {
 microbenchmark(
 # learners <- shadow_clone(learner_num = 3, sub_rounds = 100),
 learner_2 <- learning(rounds = 300, learned_state = NULL),
-times = 5)
+times = 1)
 
 
 check_finish <- function(state){
