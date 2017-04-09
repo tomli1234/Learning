@@ -38,7 +38,8 @@ learning <- function(alpha = 0.1, random = 0.1,
 		current_state <- rep(-1,25)
 		turn <- sample(0:1, 1)
 		which_option_hist <- list(NULL,NULL)
-		while(check_status_C(current_state, turn) == -1){
+		current_status <- -1
+		while(current_status == -1){
 		
 			## Update experience--------------
 			x <- t(possible_move(current_state, turn = turn))
@@ -155,8 +156,8 @@ shadow_clone <- function(learner_num, sub_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 3, sub_rounds = 100),
-learner_2 <- learning(rounds = 300, learned_state = NULL),
-times = 5)
+learner_2 <- learning(rounds = 3000, learned_state = NULL),
+times = 1)
 
 
 check_finish <- function(state){
