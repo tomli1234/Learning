@@ -37,7 +37,6 @@ learning <- function(alpha = 0.1, random = 0.1,
 		# alpha <- 1/i^(1/2.5)
 		current_state <- rep(-1,25)
 		turn <- sample(0:1, 1)
-		backup_state <- list(matrix(-2, ncol = 25),matrix(-2, ncol = 25))
 		which_option_hist <- list(NULL,NULL)
 		while(check_status_C(current_state, turn) == -1){
 		
@@ -79,9 +78,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 				learned_state[[1 + turn]][last_move, 26] <- old_value + alpha * (new_value - old_value)
 				learned_state[[1 + turn]][which_option, 26] <- new_value
 			}
-			
-			backup_state[[1 + turn]] <- current_state
-			
+						
 			turn <- abs(turn - 1)
 			
 			### Learning from opponent's move (learning defensive move)
@@ -98,9 +95,9 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}	
 					
 		}
-		print(paste0(i,', ', nrow(learned_state[[1]])))
-		progress <- c(progress, learn_progress_C(learned_state[[1]][,26]))
-		plot(progress, type='l')
+		# print(paste0(i,', ', nrow(learned_state[[1]])))
+		# progress <- c(progress, learn_progress_C(learned_state[[1]][,26]))
+		# plot(progress, type='l')
 	}
 	return(learned_state)
 }
@@ -148,7 +145,7 @@ shadow_clone <- function(learner_num, sub_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 3, sub_rounds = 100),
-learner_2 <- learning(rounds = 300, learned_state = NULL),
+learner_2 <- learning(rounds = 30, learned_state = NULL),
 times = 1)
 
 
