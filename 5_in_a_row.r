@@ -27,8 +27,8 @@ learning <- function(alpha = 0.1, random = 0.1,
 					 learned_state = NULL) {
 	if(is.null(learned_state)) {
 		learned_state <- NULL
-		learned_state[[1]] <- matrix(c(rep(-1, 25), 0.5), 1, 26)
-		learned_state[[2]] <- matrix(c(rep(-1, 25), 0.5), 1, 26)
+		learned_state[[1]] <- matrix(c(rep(-1, 25), 0.5, 0), 1, 27)
+		learned_state[[2]] <- matrix(c(rep(-1, 25), 0.5, 0), 1, 27)
 	}
 	progress <- NULL
 
@@ -47,9 +47,11 @@ learning <- function(alpha = 0.1, random = 0.1,
 			# If not seen possible move, then assign it with 0.5
 			if(sum(learned == 0) > 0){
 				option <- c(option, nrow(learned_state[[1 + turn]]) + 1:sum(learned == 0))
+				new_state <- x[learned == 0, ]
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
-												cbind(matrix(x[learned == 0, ], 
-														nrow=sum(learned == 0)), 0.5))
+												cbind(matrix(new_state, nrow=sum(learned == 0)), 
+													  0.5,
+													  ))
 			}
 				
 			## Decision----------------------	
