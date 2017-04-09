@@ -54,7 +54,8 @@ learning <- function(alpha = 0.1, random = 0.1,
 		current_state <- rep(-1,9)
 		turn <- sample(0:1, 1)
 		which_option_hist <- list(NULL,NULL)
-		while(is.null(check_status(current_state, turn))){
+		current_status <- NULL
+		while(is.null(current_status)){
 		
 			## Update experience--------------
 			x <- t(possible_move(current_state, turn = turn))
@@ -104,7 +105,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 			### Learning from opponent's move (learning defensive move)
 			oppo_state <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]])]
 			oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
-			oppo_status <- ifelse(current_status == 1, 0, ifelse(current_status == 0, 1, -1))
+			oppo_status <- check_status(current_state, turn)
 			if(is.null(oppo_status)){
 				# new_value <- decision[10]
 				# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
