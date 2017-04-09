@@ -70,7 +70,6 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}
 				
 			## Decision----------------------
-			option	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)			
 			decision_values <- learned_state[[1 + turn]][option, 10]
 			random_move <- runif(1) < random
 			if(random_move){
