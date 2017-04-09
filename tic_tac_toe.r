@@ -43,8 +43,8 @@ learning <- function(alpha = 0.1, random = 0.1,
 					 learned_state = NULL) {
 	if(is.null(learned_state)) {
 		learned_state <- NULL
-		learned_state[[1]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
-		learned_state[[2]] <- matrix(c(rep(-1, 9), 0.5), 1, 10)
+		learned_state[[1]] <- matrix(c(rep(-1, 9), 0.5, 0), 1, 11)
+		learned_state[[2]] <- matrix(c(rep(-1, 9), 0.5, 0), 1, 11)
 	}
 	progress <- NULL
 
@@ -58,17 +58,20 @@ learning <- function(alpha = 0.1, random = 0.1,
 		
 			## Update experience--------------
 			x <- t(possible_move(current_state, turn = turn))
-			learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
+			x_base3 <- apply(x + 1, 1, base3_to_decimal)
+			learned <- which_equal_C_2(learned_state[[1 + turn]][,11], x_base3)
 			
 			option <- learned[learned!=0]
 			# If not seen possible move, then assign it with 0.5
 			if(sum(learned == 0) > 0){
 				option <- c(option, nrow(learned_state[[1 + turn]]) + 1:sum(learned == 0))
+				new_state <- x[learned == 0, ]
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
-												cbind(matrix(x[learned == 0, ], 
-														nrow=sum(learned == 0)), 0.5))
+												cbind(matrix(new_state, nrow=sum(learned == 0)), 
+													  0.5,
+													  apply(matrix(new_state + 1, ncol = 9), 1, base3_to_decimal)))
 			}
-				
+
 			## Decision----------------------
 			decision_values <- learned_state[[1 + turn]][option, 10]
 			random_move <- runif(1) < random
@@ -112,9 +115,9 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}	
 					
 		}
-		# print(paste0(i,', ', nrow(learned_state[[1]])))
-		# progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
-		# plot(progress, type='l')
+		print(paste0(i,', ', nrow(learned_state[[1]])))
+		progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
+		plot(progress, type='l')
 	}
 	return(learned_state)
 }
@@ -163,7 +166,7 @@ shadow_clone <- function(learner_num, total_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
-learner_2 <- learning(rounds = 1000, learned_state = NULL),
+learner_2 <- learning(rounds = 10000, learned_state = NULL),
 times = 1)
 
 
