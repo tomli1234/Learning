@@ -27,8 +27,8 @@ learning <- function(alpha = 0.1, random = 0.1,
 					 learned_state = NULL) {
 	if(is.null(learned_state)) {
 		learned_state <- NULL
-		learned_state[[1]] <- matrix(c(rep(-1, 25), 0.5), 1, 26)
-		learned_state[[2]] <- matrix(c(rep(-1, 25), 0.5), 1, 26)
+		learned_state[[1]] <- matrix(c(rep(-1, 25), 0.5, 0), 1, 27)
+		learned_state[[2]] <- matrix(c(rep(-1, 25), 0.5, 0), 1, 27)
 	}
 	progress <- NULL
 
@@ -42,14 +42,22 @@ learning <- function(alpha = 0.1, random = 0.1,
 		
 			## Update experience--------------
 			x <- t(possible_move(current_state, turn = turn))
-			learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), x)
+			x_base3 <- apply(x + 1, 1, base3_to_decimal)
+			# microbenchmark(
+			# learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:25]), x),
+			# learned <- sapply(x_base3, function(x) which_equal_C(learned_state[[1 + turn]][,27], x)),
+			learned <- which_equal_C_2(learned_state[[1 + turn]][,27], x_base3)
+			# )
+			
 			option <- learned[learned!=0]
 			# If not seen possible move, then assign it with 0.5
 			if(sum(learned == 0) > 0){
 				option <- c(option, nrow(learned_state[[1 + turn]]) + 1:sum(learned == 0))
+				new_state <- x[learned == 0, ]
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
-												cbind(matrix(x[learned == 0, ], 
-														nrow=sum(learned == 0)), 0.5))
+												cbind(matrix(new_state, nrow=sum(learned == 0)), 
+													  0.5,
+													  base3_to_decimal(new_state + 1)))
 			}
 				
 			## Decision----------------------	
@@ -95,9 +103,9 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}	
 					
 		}
-		# print(paste0(i,', ', nrow(learned_state[[1]])))
-		# progress <- c(progress, learn_progress_C(learned_state[[1]][,26]))
-		# plot(progress, type='l')
+		print(paste0(i,', ', nrow(learned_state[[1]])))
+		progress <- c(progress, learn_progress_C(learned_state[[1]][,26]))
+		plot(progress, type='l')
 	}
 	return(learned_state)
 }
@@ -109,7 +117,7 @@ shadow_clone <- function(learner_num, sub_rounds) {
 	envir_1 <- environment()
 	no_cores <- detectCores() - 1
 	cl <- makeCluster(no_cores)		
-	clusterExport(cl, list("learning","possible_move","sample.vec","which_equal_C","check_which_state_2_C","check_status_C"),
+	clusterExport(cl, list("learning","possible_move","sample.vec","which_equal_C","which_equal_C_2","check_status_C"),
 					envir = .GlobalEnv)
 	learners <- lapply(1:learner_num, function(x) NULL)
 	for(j in 1:10) {
@@ -145,7 +153,7 @@ shadow_clone <- function(learner_num, sub_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 3, sub_rounds = 100),
-learner_2 <- learning(rounds = 30, learned_state = NULL),
+learner_2 <- learning(rounds = 300, learned_state = NULL),
 times = 1)
 
 
