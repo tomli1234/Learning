@@ -53,14 +53,17 @@ learning <- function(alpha = 0.1, random = 0.1,
 		# alpha <- 1/i^(1/2.5)
 		current_state <- rep(-1,9)
 		turn <- sample(0:1, 1)
-		backup_state <- list(matrix(-2, ncol = 9),matrix(-2, ncol = 9))
+		which_option_hist <- list(NULL,NULL)
 		while(is.null(check_status(current_state, turn))){
 		
 			## Update experience--------------
 			x <- t(possible_move(current_state, turn = turn))
 			learned	<- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), x)
+			
+			option <- learned[learned!=0]
 			# If not seen possible move, then assign it with 0.5
 			if(sum(learned == 0) > 0){
+				option <- c(option, nrow(learned_state[[1 + turn]]) + 1:sum(learned == 0))
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
 												cbind(matrix(x[learned == 0, ], 
 														nrow=sum(learned == 0)), 0.5))
@@ -75,8 +78,10 @@ learning <- function(alpha = 0.1, random = 0.1,
 			} else {
 				which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
 			}
+			which_option_hist[[1 + turn]] <- c(which_option_hist[[1 + turn]], which_option)
 			decision <- learned_state[[1 + turn]][which_option, ]
-			last_move <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))			
+			last_move <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]]) - 1]
+
 			old_value <- learned_state[[1 + turn]][last_move, 10]
 			current_state <- decision[1:9]
 			current_status <- check_status(current_state, turn)
@@ -91,13 +96,11 @@ learning <- function(alpha = 0.1, random = 0.1,
 				learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
 				learned_state[[1 + turn]][which_option, 10] <- new_value
 			}
-			
-			backup_state[[1 + turn]] <- current_state
-			
+						
 			turn <- abs(turn - 1)
 			
 			### Learning from opponent's move (learning defensive move)
-			oppo_state <- check_which_state_2_C(as.matrix(learned_state[[1 + turn]][, 1:9]), matrix(backup_state[[1 + turn]], ncol = 9))					
+			oppo_state <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]])]
 			oppo_value <- learned_state[[1 + turn]][oppo_state, 10]
 			oppo_status <- check_status(current_state, turn)
 			if(is.null(oppo_status)){
@@ -160,8 +163,8 @@ shadow_clone <- function(learner_num, total_rounds) {
 }
 
 microbenchmark(
-learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
-learner_2 <- learning(rounds = 10000, learned_state = NULL),
+# learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
+learner_2 <- learning(rounds = 1000, learned_state = NULL),
 times = 1)
 
 
