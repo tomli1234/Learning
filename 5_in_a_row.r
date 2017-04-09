@@ -57,7 +57,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
 												cbind(matrix(new_state, nrow=sum(learned == 0)), 
 													  0.5,
-													  base3_to_decimal(new_state + 1)))
+													  apply(matrix(new_state + 1, ncol = 25), 1, base3_to_decimal)))
 			}
 				
 			## Decision----------------------	
