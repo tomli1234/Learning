@@ -123,11 +123,11 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}	
 					
 		}
-		# print(paste0(i,', ', nrow(learned_state[[1]])))
-		# progress <- c(progress, learn_progress_C(learned_state[[1]][,26]))
-		# plot(progress, type='l')
+		print(paste0(i,', ', nrow(learned_state[[1]])))
+		progress <- c(progress, learn_progress_C(learned_state[[1]][,26]))
+		plot(progress, type='l')
 		
-		print(table(learned_state[[1]][,26] != 0.5))
+		# print(table(learned_state[[1]][,26] != 0.5))
 	}
 	return(learned_state)
 }
@@ -175,7 +175,7 @@ shadow_clone <- function(learner_num, sub_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 3, sub_rounds = 10),
-learner_2 <- learning(rounds = 300, learned_state = NULL),
+learner_2 <- learning(rounds = 3000, learned_state = NULL),
 times = 1)
 
 
