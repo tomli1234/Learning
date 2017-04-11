@@ -84,6 +84,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 			which_option_hist[[1 + turn]] <- c(which_option_hist[[1 + turn]], which_option)
 			decision <- learned_state[[1 + turn]][which_option, ]
 			last_move <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]]) - 1]
+			last_move_2 <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]]) - 2]
 
 			old_value <- learned_state[[1 + turn]][last_move, 10]
 			current_state <- decision[1:9]
@@ -92,12 +93,24 @@ learning <- function(alpha = 0.1, random = 0.1,
 			## Learning---------------------
 			### Current move
 			if(is.null(current_status)){
+				# First step
 				new_value <- decision[10]
 				learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
+				
+				# Second step
+				new_value <- learned_state[[1 + turn]][last_move, 10]
+				old_value <- learned_state[[1 + turn]][last_move_2, 10]
+				learned_state[[1 + turn]][last_move_2, 10] <- old_value + alpha/2 * (new_value - old_value)
 			} else {
+				# First step
 				new_value <- current_status
 				learned_state[[1 + turn]][last_move, 10] <- old_value + alpha * (new_value - old_value)
 				learned_state[[1 + turn]][which_option, 10] <- new_value
+				
+				# Second step
+				new_value <- learned_state[[1 + turn]][last_move, 10]
+				old_value <- learned_state[[1 + turn]][last_move_2, 10]
+				learned_state[[1 + turn]][last_move_2, 10] <- old_value + alpha/2 * (new_value - old_value)
 			}
 						
 			turn <- abs(turn - 1)
@@ -167,7 +180,7 @@ shadow_clone <- function(learner_num, total_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
-learner_2 <- learning(rounds = 10000, learned_state = NULL),
+learner_2 <- learning(rounds = 1000, learned_state = NULL),
 times = 1)
 
 
