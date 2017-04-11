@@ -67,7 +67,9 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}
 			which_option_hist[[1 + turn]] <- c(which_option_hist[[1 + turn]], which_option)
 			decision <- learned_state[[1 + turn]][which_option, ]
-			last_move <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]]) - 1]
+			last_move <- which_option_hist[[1 + turn]][max(0, length(which_option_hist[[1 + turn]]) - 1)]
+			last_move_2 <- which_option_hist[[1 + turn]][max(0, length(which_option_hist[[1 + turn]]) - 2)]
+			last_move_3 <- which_option_hist[[1 + turn]][max(0, length(which_option_hist[[1 + turn]]) - 3)]
 			
 			old_value <- learned_state[[1 + turn]][last_move, 26]
 			current_state <- decision[1:25]
@@ -78,10 +80,29 @@ learning <- function(alpha = 0.1, random = 0.1,
 			if(current_status == -1){
 				new_value <- decision[26]
 				learned_state[[1 + turn]][last_move, 26] <- old_value + alpha * (new_value - old_value)
+				
+				# Second step
+				new_value <- learned_state[[1 + turn]][last_move, 26]
+				old_value <- learned_state[[1 + turn]][last_move_2, 26]
+				learned_state[[1 + turn]][last_move_2, 26] <- old_value + alpha/2 * (new_value - old_value)
+				
+				# Third step
+				new_value <- learned_state[[1 + turn]][last_move_2, 26]
+				old_value <- learned_state[[1 + turn]][last_move_3, 26]
+				learned_state[[1 + turn]][last_move_3, 26] <- old_value + alpha/2 * (new_value - old_value)
 			} else {
 				new_value <- current_status
 				learned_state[[1 + turn]][last_move, 26] <- old_value + alpha * (new_value - old_value)
 				learned_state[[1 + turn]][which_option, 26] <- new_value
+				
+				# Second step
+				new_value <- learned_state[[1 + turn]][last_move, 26]
+				old_value <- learned_state[[1 + turn]][last_move_2, 26]
+				learned_state[[1 + turn]][last_move_2, 26] <- old_value + alpha/2 * (new_value - old_value)
+				# Third step
+				new_value <- learned_state[[1 + turn]][last_move_2, 26]
+				old_value <- learned_state[[1 + turn]][last_move_3, 26]
+				learned_state[[1 + turn]][last_move_3, 26] <- old_value + alpha/2 * (new_value - old_value)
 			}
 						
 			turn <- abs(turn - 1)
@@ -105,6 +126,8 @@ learning <- function(alpha = 0.1, random = 0.1,
 		# print(paste0(i,', ', nrow(learned_state[[1]])))
 		# progress <- c(progress, learn_progress_C(learned_state[[1]][,26]))
 		# plot(progress, type='l')
+		
+		print(table(learned_state[[1]][,26] != 0.5))
 	}
 	return(learned_state)
 }
@@ -151,8 +174,8 @@ shadow_clone <- function(learner_num, sub_rounds) {
 }
 
 microbenchmark(
-learners <- shadow_clone(learner_num = 3, sub_rounds = 10),
-# learner_2 <- learning(rounds = 100, learned_state = NULL),
+# learners <- shadow_clone(learner_num = 3, sub_rounds = 10),
+learner_2 <- learning(rounds = 300, learned_state = NULL),
 times = 1)
 
 
