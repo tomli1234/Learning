@@ -180,7 +180,7 @@ shadow_clone <- function(learner_num, total_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
-learner_2 <- learning(rounds = 1000, learned_state = NULL),
+learner_2 <- learning(rounds = 3000, learned_state = NULL),
 times = 1)
 
 
@@ -271,7 +271,7 @@ play <- function(first){
 }
 learned_state <- learners[[1]]
 learned_state <- learner_2
-play(first=0)
+play(first=1)
 
 
 
@@ -292,7 +292,7 @@ test_play <- function(first, player1, player0){
 			if(sum(learned == 0) > 0){
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
 												cbind(matrix(x[learned == 0, ], 
-														nrow=sum(learned == 0)), 0.5))
+														nrow=sum(learned == 0)), 0.5, NA))
 			}
 				
 			## Decision----------------------
