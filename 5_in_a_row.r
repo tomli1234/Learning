@@ -177,6 +177,7 @@ microbenchmark(
 # learners <- shadow_clone(learner_num = 3, sub_rounds = 10),
 learner_2 <- learning(rounds = 3000, learned_state = NULL),
 times = 1)
+learner_2 <- learning(rounds = 3000, learned_state = learner_2)
 
 
 check_finish <- function(state){
