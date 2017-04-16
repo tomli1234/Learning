@@ -85,7 +85,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 			learned <- which_equal_C_2(learned_state[[1 + turn]][,11], x_symmetry[, 11])
 			
 			option <- learned[learned!=0]
-			transform_index <- rep(4, length(learned)) # 4: identity
+			transform_index <- x_symmetry[learned!=0, 10]
 			# If not seen possible move, then assign it with 0.5
 			if(sum(learned == 0) > 0){
 				option <- c(option, nrow(learned_state[[1 + turn]]) + 1:sum(learned == 0))
@@ -94,7 +94,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 												cbind(matrix(new_state[, 1:9], nrow=sum(learned == 0)), 
 													  0.5,
 													  new_state[, 11]))
-				transform_index <- c(rep(0, sum(learned != 0)), new_state[, 10])
+				transform_index <- c(transform_index, new_state[, 10])
 													  
 			}
 			
@@ -212,7 +212,7 @@ shadow_clone <- function(learner_num, total_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
-learner_2 <- learning(rounds = 20000, learned_state = NULL),
+learner_2 <- learning(rounds = 3000, learned_state = NULL),
 times = 1)
 
 
@@ -326,13 +326,7 @@ play <- function(first){
 			
 			## Decision----------------------
 			decision_values <- learned_state[[1 + turn]][option, 10]
-			random_move <- runif(1) < random
-			if(random_move){
-				which_option <- sample(option, 1)
-			} else {
-				which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
-			}
-			which_option_hist[[1 + turn]] <- c(which_option_hist[[1 + turn]], which_option)
+			which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
 			
 			transform_index <- transform_index[option == which_option]
 			
@@ -361,7 +355,7 @@ play <- function(first){
 }
 learned_state <- learners[[1]]
 learned_state <- learner_2
-play(first=1)
+play(first=0)
 
 
 
