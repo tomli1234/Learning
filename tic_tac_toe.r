@@ -37,6 +37,28 @@ check_status <- function(state,
 	}
 }
 
+identify_symmetry <- function(x, learned_state, turn){
+	x_symmetry <- NULL
+	for(i in 1:nrow(x)){
+		# Add symmetry index
+		x_equi <- cbind(equivalent_C(x[i, ]), symmetry = 1:8)
+		# Add state identifier 
+		x_equi_base3 <- apply(x_equi[, 1:9] + 1, 1, base3_to_decimal)
+		# Drop duplicated 
+		x_equi <- cbind(x_equi, x_equi_base3)[!duplicated(x_equi_base3),]
+		x_equi <- matrix(x_equi, ncol = 11)
+		learned <- which_equal_C_2(learned_state[[1 + turn]][,11], x_equi[,11])
+		if(sum(learned) == 0){
+			# if not learned, learn one of them
+			x_symmetry <- rbind(x_symmetry, x_equi[1, ])
+		} else {
+			# else, treat it as the equivalent one
+			x_symmetry <- rbind(x_symmetry, x_equi[which(learned != 0)[1], ])						
+		}
+	}
+	return(x_symmetry)
+}
+			
 ## Initialisation
 learning <- function(alpha = 0.1, random = 0.1,
 					 rounds,
@@ -59,28 +81,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 		
 			## Update experience--------------
 			x <- t(possible_move(current_state, turn = turn))
-			identify_symmetry <- function(x){
-				x_symmetry <- NULL
-				for(i in 1:nrow(x)){
-					# Add symmetry index
-					x_equi <- cbind(equivalent_C(x[i, ]), symmetry = 1:8)
-					# Add state identifier 
-					x_equi_base3 <- apply(x_equi[, 1:9] + 1, 1, base3_to_decimal)
-					# Drop duplicated 
-					x_equi <- cbind(x_equi, x_equi_base3)[!duplicated(x_equi_base3),]
-					x_equi <- matrix(x_equi, ncol = 11)
-					learned <- which_equal_C_2(learned_state[[1 + turn]][,11], x_equi[,11])
-					if(sum(learned) == 0){
-						# if not learned, learn one of them
-						x_symmetry <- rbind(x_symmetry, x_equi[1, ])
-					} else {
-						# else, treat it as the equivalent one
-						x_symmetry <- rbind(x_symmetry, x_equi[which(learned != 0)[1], ])						
-					}
-				}
-				return(x_symmetry)
-			}
-			x_symmetry <- identify_symmetry(x)
+			x_symmetry <- identify_symmetry(x, learned_state, turn)
 			
 			learned <- which_equal_C_2(learned_state[[1 + turn]][,11], x_symmetry[, 11])
 			
@@ -161,9 +162,9 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}	
 					
 		}
-		print(paste0(i,', ', nrow(learned_state[[1]])))
-		progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
-		plot(progress, type='l')
+		# print(paste0(i,', ', nrow(learned_state[[1]])))
+		# progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
+		# plot(progress, type='l')
 	}
 	return(learned_state)
 }
@@ -212,7 +213,7 @@ shadow_clone <- function(learner_num, total_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
-learner_2 <- learning(rounds = 3000, learned_state = NULL),
+learner_2 <- learning(rounds = 30000, learned_state = NULL),
 times = 1)
 
 
@@ -273,40 +274,8 @@ play <- function(first){
 			current_state[as.numeric(player_move)] <- 1
 			if(check_finish(current_state) != 0) {break}
 		}	
-		######################################################
-		# x <- t(possible_move(current_state, turn = turn))
-		# learned <- split(x, row(x)) %in% split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE))
-		# if(sum(learned == FALSE) != 0){
-			# learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], cbind(matrix(x[learned == FALSE, ], nrow=sum(learned == FALSE)), 0.5, NA))
-		# }
-		# option <- which(split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE)) %in% split(x, row(x)) )
-		# decision_values <- learned_state[[1 + turn]][option, 10]
-		# which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
-		# decision <- learned_state[[1 + turn]][which_option, ]
-		#####################################################
 			x <- t(possible_move(current_state, turn = turn))
-			identify_symmetry <- function(x){
-				x_symmetry <- NULL
-				for(i in 1:nrow(x)){
-					# Add symmetry index
-					x_equi <- cbind(equivalent_C(x[i, ]), symmetry = 1:8)
-					# Add state identifier 
-					x_equi_base3 <- apply(x_equi[, 1:9] + 1, 1, base3_to_decimal)
-					# Drop duplicated 
-					x_equi <- cbind(x_equi, x_equi_base3)[!duplicated(x_equi_base3),]
-					x_equi <- matrix(x_equi, ncol = 11)
-					learned <- which_equal_C_2(learned_state[[1 + turn]][,11], x_equi[,11])
-					if(sum(learned) == 0){
-						# if not learned, learn one of them
-						x_symmetry <- rbind(x_symmetry, x_equi[1, ])
-					} else {
-						# else, treat it as the equivalent one
-						x_symmetry <- rbind(x_symmetry, x_equi[which(learned != 0)[1], ])						
-					}
-				}
-				return(x_symmetry)
-			}
-			x_symmetry <- identify_symmetry(x)
+			x_symmetry <- identify_symmetry(x, learned_state, turn)
 			
 			learned <- which_equal_C_2(learned_state[[1 + turn]][,11], x_symmetry[, 11])
 			
