@@ -129,9 +129,9 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}	
 					
 		}
-		print(paste0(i,', ', nrow(learned_state[[1]])))
-		progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
-		plot(progress, type='l')
+		# print(paste0(i,', ', nrow(learned_state[[1]])))
+		# progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
+		# plot(progress, type='l')
 	}
 	return(learned_state)
 }
@@ -143,7 +143,7 @@ shadow_clone <- function(learner_num, total_rounds) {
 	envir_1 <- environment()
 	no_cores <- detectCores() - 1
 	cl <- makeCluster(no_cores)		
-	clusterExport(cl, list("learning","check_status","possible_move","sample.vec","which_equal_C","check_which_state_2_C"),
+	clusterExport(cl, list("learning","check_status","which_equal_C_2","possible_move","base3_to_decimal","sample.vec","which_equal_C","check_which_state_2_C"),
 					envir = .GlobalEnv)
 	learners <- lapply(1:learner_num, function(x) NULL)
 	sub_rounds <- total_rounds/100
@@ -179,8 +179,8 @@ shadow_clone <- function(learner_num, total_rounds) {
 }
 
 microbenchmark(
-# learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
-learner_2 <- learning(rounds = 3000, learned_state = NULL),
+learners <- shadow_clone(learner_num = 4, total_rounds = 5000),
+learner_2 <- learning(rounds = 30000, learned_state = NULL),
 times = 1)
 
 
