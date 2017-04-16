@@ -89,7 +89,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 			# If not seen possible move, then assign it with 0.5
 			if(sum(learned == 0) > 0){
 				option <- c(option, nrow(learned_state[[1 + turn]]) + 1:sum(learned == 0))
-				new_state <- x_symmetry[learned == 0, ]
+				new_state <- matrix(x_symmetry[learned == 0, ], ncol = 11)
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
 												cbind(matrix(new_state[, 1:9], nrow=sum(learned == 0)), 
 													  0.5,
@@ -118,7 +118,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 			
 			# Reverse transformation
 			current_state <- decision[1:9]
-			current_state <- revert_symmetry_C(current_state, transform_index)
+			current_state <- revert_symmetry_C(current_state, transform_index[1])
 			
 			current_status <- check_status(current_state, turn)
 			
@@ -212,7 +212,7 @@ shadow_clone <- function(learner_num, total_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
-learner_2 <- learning(rounds = 3000, learned_state = NULL),
+learner_2 <- learning(rounds = 20000, learned_state = NULL),
 times = 1)
 
 
@@ -273,16 +273,74 @@ play <- function(first){
 			current_state[as.numeric(player_move)] <- 1
 			if(check_finish(current_state) != 0) {break}
 		}	
-		x <- t(possible_move(current_state, turn = turn))
-		learned <- split(x, row(x)) %in% split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE))
-		if(sum(learned == FALSE) != 0){
-			learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], cbind(matrix(x[learned == FALSE, ], nrow=sum(learned == FALSE)), 0.5, NA))
-		}
-		option <- which(split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE)) %in% split(x, row(x)) )
-		decision_values <- learned_state[[1 + turn]][option, 10]
-		which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
-		decision <- learned_state[[1 + turn]][which_option, ]
-		current_state <- decision[1:9]
+		######################################################
+		# x <- t(possible_move(current_state, turn = turn))
+		# learned <- split(x, row(x)) %in% split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE))
+		# if(sum(learned == FALSE) != 0){
+			# learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], cbind(matrix(x[learned == FALSE, ], nrow=sum(learned == FALSE)), 0.5, NA))
+		# }
+		# option <- which(split(learned_state[[1 + turn]][, 1:9], matrix(rep(1:nrow(learned_state[[1 + turn]]), each = 9), nrow = nrow(learned_state[[1 + turn]]), byrow = TRUE)) %in% split(x, row(x)) )
+		# decision_values <- learned_state[[1 + turn]][option, 10]
+		# which_option <- option[sample.vec(which(decision_values == max(decision_values)), 1)]
+		# decision <- learned_state[[1 + turn]][which_option, ]
+		#####################################################
+			x <- t(possible_move(current_state, turn = turn))
+			identify_symmetry <- function(x){
+				x_symmetry <- NULL
+				for(i in 1:nrow(x)){
+					# Add symmetry index
+					x_equi <- cbind(equivalent_C(x[i, ]), symmetry = 1:8)
+					# Add state identifier 
+					x_equi_base3 <- apply(x_equi[, 1:9] + 1, 1, base3_to_decimal)
+					# Drop duplicated 
+					x_equi <- cbind(x_equi, x_equi_base3)[!duplicated(x_equi_base3),]
+					x_equi <- matrix(x_equi, ncol = 11)
+					learned <- which_equal_C_2(learned_state[[1 + turn]][,11], x_equi[,11])
+					if(sum(learned) == 0){
+						# if not learned, learn one of them
+						x_symmetry <- rbind(x_symmetry, x_equi[1, ])
+					} else {
+						# else, treat it as the equivalent one
+						x_symmetry <- rbind(x_symmetry, x_equi[which(learned != 0)[1], ])						
+					}
+				}
+				return(x_symmetry)
+			}
+			x_symmetry <- identify_symmetry(x)
+			
+			learned <- which_equal_C_2(learned_state[[1 + turn]][,11], x_symmetry[, 11])
+			
+			option <- learned[learned!=0]
+			transform_index <- x_symmetry[learned!=0, 10]
+			# If not seen possible move, then assign it with 0.5
+			if(sum(learned == 0) > 0){
+				option <- c(option, nrow(learned_state[[1 + turn]]) + 1:sum(learned == 0))
+				new_state <- matrix(x_symmetry[learned == 0, ], ncol = 11)
+				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
+												cbind(matrix(new_state[, 1:9], nrow=sum(learned == 0)), 
+													  0.5,
+													  new_state[, 11]))
+				transform_index <- c(transform_index, new_state[, 10])
+													  
+			}
+			
+			## Decision----------------------
+			decision_values <- learned_state[[1 + turn]][option, 10]
+			random_move <- runif(1) < random
+			if(random_move){
+				which_option <- sample(option, 1)
+			} else {
+				which_option <- option[sample.vec(which_equal_C(decision_values, max(decision_values)), 1)]
+			}
+			which_option_hist[[1 + turn]] <- c(which_option_hist[[1 + turn]], which_option)
+			
+			transform_index <- transform_index[option == which_option]
+			
+			decision <- learned_state[[1 + turn]][which_option, ]
+			######################################################
+			current_state <- decision[1:9]
+			current_state <- revert_symmetry_C(current_state, transform_index[1])
+
 		if(first == 0){
 			print(matrix(current_state, 3, 3))
 			print(visualise_game(current_state))
