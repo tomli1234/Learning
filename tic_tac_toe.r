@@ -129,9 +129,9 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}	
 					
 		}
-		# print(paste0(i,', ', nrow(learned_state[[1]])))
-		# progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
-		# plot(progress, type='l')
+		print(paste0(i,', ', nrow(learned_state[[1]])))
+		progress <- c(progress, learn_progress_C(learned_state[[1]][,10]))
+		plot(progress, type='l')
 	}
 	return(learned_state)
 }
