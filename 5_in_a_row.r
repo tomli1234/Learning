@@ -27,15 +27,15 @@ learning <- function(alpha = 0.1, random = 0.1,
 					 learned_state = NULL) {
 	if(is.null(learned_state)) {
 		learned_state <- NULL
-		learned_state[[1]] <- matrix(c(rep(-1, 25), 0.5, 0), 1, 27)
-		learned_state[[2]] <- matrix(c(rep(-1, 25), 0.5, 0), 1, 27)
+		learned_state[[1]] <- matrix(c(rep(-1, 100), 0.5, 0), 1, 102)
+		learned_state[[2]] <- matrix(c(rep(-1, 100), 0.5, 0), 1, 102)
 	}
 	progress <- NULL
 
 	## Learning
 	for(i in 1:rounds){
 		# alpha <- 1/i^(1/2.5)
-		current_state <- rep(-1,25)
+		current_state <- rep(-1,100)
 		turn <- sample(0:1, 1)
 		which_option_hist <- list(NULL,NULL)
 		current_status <- -1
@@ -44,7 +44,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 			## Update experience--------------
 			x <- t(possible_move(current_state, turn = turn))
 			x_base3 <- apply(x + 1, 1, base3_to_decimal)
-			learned <- which_equal_C_2(learned_state[[1 + turn]][,27], x_base3)
+			learned <- which_equal_C_2(learned_state[[1 + turn]][,102], x_base3)
 			
 			option <- learned[learned!=0]
 			# If not seen possible move, then assign it with 0.5
@@ -54,11 +54,11 @@ learning <- function(alpha = 0.1, random = 0.1,
 				learned_state[[1 + turn]] <- rbind(learned_state[[1 + turn]], 
 												cbind(matrix(new_state, nrow=sum(learned == 0)), 
 													  0.5,
-													  apply(matrix(new_state + 1, ncol = 25), 1, base3_to_decimal)))
+													  apply(matrix(new_state + 1, ncol = 100), 1, base3_to_decimal)))
 			}
 				
 			## Decision----------------------	
-			decision_values <- learned_state[[1 + turn]][option, 26]
+			decision_values <- learned_state[[1 + turn]][option, 101]
 			random_move <- runif(1) < random
 			if(random_move){
 				which_option <- sample(option, 1)
@@ -71,45 +71,45 @@ learning <- function(alpha = 0.1, random = 0.1,
 			last_move_2 <- which_option_hist[[1 + turn]][max(0, length(which_option_hist[[1 + turn]]) - 2)]
 			last_move_3 <- which_option_hist[[1 + turn]][max(0, length(which_option_hist[[1 + turn]]) - 3)]
 			
-			old_value <- learned_state[[1 + turn]][last_move, 26]
-			current_state <- decision[1:25]
+			old_value <- learned_state[[1 + turn]][last_move, 101]
+			current_state <- decision[1:100]
 			current_status <- check_status_C(current_state, turn)
 			
 			## Learning---------------------
 			### Current move
 			if(current_status == -1){
-				new_value <- decision[26]
-				learned_state[[1 + turn]][last_move, 26] <- old_value + alpha * (new_value - old_value)
+				new_value <- decision[101]
+				learned_state[[1 + turn]][last_move, 101] <- old_value + alpha * (new_value - old_value)
 				
 				# Second step
-				new_value <- learned_state[[1 + turn]][last_move, 26]
-				old_value <- learned_state[[1 + turn]][last_move_2, 26]
-				learned_state[[1 + turn]][last_move_2, 26] <- old_value + alpha/2 * (new_value - old_value)
+				new_value <- learned_state[[1 + turn]][last_move, 101]
+				old_value <- learned_state[[1 + turn]][last_move_2, 101]
+				learned_state[[1 + turn]][last_move_2, 101] <- old_value + alpha/2 * (new_value - old_value)
 				
 				# Third step
-				new_value <- learned_state[[1 + turn]][last_move_2, 26]
-				old_value <- learned_state[[1 + turn]][last_move_3, 26]
-				learned_state[[1 + turn]][last_move_3, 26] <- old_value + alpha/2 * (new_value - old_value)
+				new_value <- learned_state[[1 + turn]][last_move_2, 101]
+				old_value <- learned_state[[1 + turn]][last_move_3, 101]
+				learned_state[[1 + turn]][last_move_3, 101] <- old_value + alpha/2 * (new_value - old_value)
 			} else {
 				new_value <- current_status
-				learned_state[[1 + turn]][last_move, 26] <- old_value + alpha * (new_value - old_value)
-				learned_state[[1 + turn]][which_option, 26] <- new_value
+				learned_state[[1 + turn]][last_move, 101] <- old_value + alpha * (new_value - old_value)
+				learned_state[[1 + turn]][which_option, 101] <- new_value
 				
 				# Second step
-				new_value <- learned_state[[1 + turn]][last_move, 26]
-				old_value <- learned_state[[1 + turn]][last_move_2, 26]
-				learned_state[[1 + turn]][last_move_2, 26] <- old_value + alpha/2 * (new_value - old_value)
+				new_value <- learned_state[[1 + turn]][last_move, 101]
+				old_value <- learned_state[[1 + turn]][last_move_2, 101]
+				learned_state[[1 + turn]][last_move_2, 101] <- old_value + alpha/2 * (new_value - old_value)
 				# Third step
-				new_value <- learned_state[[1 + turn]][last_move_2, 26]
-				old_value <- learned_state[[1 + turn]][last_move_3, 26]
-				learned_state[[1 + turn]][last_move_3, 26] <- old_value + alpha/2 * (new_value - old_value)
+				new_value <- learned_state[[1 + turn]][last_move_2, 101]
+				old_value <- learned_state[[1 + turn]][last_move_3, 101]
+				learned_state[[1 + turn]][last_move_3, 101] <- old_value + alpha/2 * (new_value - old_value)
 			}
 						
 			turn <- abs(turn - 1)
 			
 			### Learning from opponent's move (learning defensive move)
 			oppo_state <- which_option_hist[[1 + turn]][length(which_option_hist[[1 + turn]])]
-			oppo_value <- learned_state[[1 + turn]][oppo_state, 26]
+			oppo_value <- learned_state[[1 + turn]][oppo_state, 101]
 			oppo_status <- ifelse(current_status == 1, 0, ifelse(current_status == 0, 1, -1))
 			
 			
@@ -118,13 +118,13 @@ learning <- function(alpha = 0.1, random = 0.1,
 				# learned_state[[1 + turn]][oppo_state, 10] <- oppo_value + alpha * (new_value - oppo_value)
 			} else {
 				new_value <- oppo_status
-				learned_state[[1 + turn]][oppo_state, 26] <- oppo_value + alpha * (new_value - oppo_value)
+				learned_state[[1 + turn]][oppo_state, 101] <- oppo_value + alpha * (new_value - oppo_value)
 				# print(learned_state[[1 + turn]][oppo_state, 10] )
 			}	
 					
 		}
 		print(paste0(i,', ', nrow(learned_state[[1]])))
-		progress <- c(progress, learn_progress_C(learned_state[[1]][,26]))
+		progress <- c(progress, learn_progress_C(learned_state[[1]][,101]))
 		plot(progress, type='l')
 		
 		# print(table(learned_state[[1]][,26] != 0.5))
@@ -175,7 +175,7 @@ shadow_clone <- function(learner_num, sub_rounds) {
 
 microbenchmark(
 # learners <- shadow_clone(learner_num = 3, sub_rounds = 10),
-learner_2 <- learning(rounds = 3000, learned_state = NULL),
+learner_2 <- learning(rounds = 1000, learned_state = NULL),
 times = 1)
 learner_2 <- learning(rounds = 3000, learned_state = learner_2)
 
