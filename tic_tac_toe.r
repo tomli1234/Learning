@@ -113,7 +113,7 @@ learning <- function(alpha = 0.1, random = 0.1,
 			}
 						
 			turn <- abs(turn - 1)
-			
+			learned_state[, 10] <- 1 - learned_state[, 10] 
 			
 			### Learning from opponent's move (learning defensive move)
 			oppo_state <- which_option_hist[length(which_option_hist)]
