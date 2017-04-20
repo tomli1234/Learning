@@ -179,7 +179,7 @@ learner_2 <- learning(rounds = 1000, learned_state = NULL),
 times = 1)
 learner_2 <- learning(rounds = 3000, learned_state = learner_2)
 
- 
+
 check_finish <- function(state){
 	state[state == -1] <- NA
 	state_mat <- matrix(state, 5, 5)
