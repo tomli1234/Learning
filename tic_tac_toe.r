@@ -212,11 +212,8 @@ shadow_clone <- function(learner_num, total_rounds) {
 }
 
 microbenchmark(
-<<<<<<< HEAD
 # learners <- shadow_clone(learner_num = 4, total_rounds = 2000),
-=======
 learners <- shadow_clone(learner_num = 4, total_rounds = 5000),
->>>>>>> refs/remotes/origin/master
 learner_2 <- learning(rounds = 30000, learned_state = NULL),
 times = 1)
 
