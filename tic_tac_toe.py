@@ -101,8 +101,9 @@ model.predict(S.reshape(1,9), batch_size=1)
 initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
+i = 0
 
-for i in range(10000):
+while i<2000:
     # Assume I play 0, opponent plays 1
     turn = 0
     S = np.array(initial_state)
@@ -120,11 +121,14 @@ for i in range(10000):
         y = np.array(Q)
         finished = check_finish(new_S)
         y[action] = rewards(new_S, action, turn) + (1 - finished) * gamma * max(new_Q)
-        model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=1)
+        model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
         # 'Flip' the game board, 0 <-> 1
         empty = [i for i, s in enumerate(new_S) if s == -1]
         S = 1 - new_S
         S[empty] = -1
+        print S
+    i = i + 1
+
 
 
 S = np.array([-1,0,0,1,1,-1,-1,-1,-1], dtype = float)    
