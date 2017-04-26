@@ -7,6 +7,7 @@
 
 import numpy as np
 import timeit
+import random
 
 # Identify possible moves-----------------------------------
 def possible_moves(state, turn):
@@ -38,12 +39,23 @@ def game_status(state, turn):
         return(turn)
     elif any(i == 0 for i in allsum):
         return(1- turn)
-    elif any(np.isnan(i) for i in allsum):
-        return(1 - turn)
+    else:
+        return 0
         
-S = np.array([1,1,1,0,0,1,-1,-1,-1], dtype = float)    
+S = np.array([-1,0,-1,-1,-1,-1,-1,-1,-1], dtype = float)    
 timeit.timeit(lambda: game_status(S, 0), number = 1000)/1000
 
+def check_finish(state):
+    empty = [i for i, s in enumerate(state) if s == -1]
+    if len(empty) == 0:
+        return 1
+    else:
+        return 0
+
+S = np.array([1,1,1,0,0,1,1,1,1], dtype = float)    
+check_finish(S)
+        
+        
 # Get rewards----------------------------------------------
 def rewards(state, previous_action, turn):
     # If move on occupied space, then heavily penalise
@@ -69,7 +81,7 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.optimizers import RMSprop
 
 model = Sequential()
-model.add(Dense(300, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(30, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.2)) I'm not using dropout, but maybe you wanna give it a try?
 
@@ -86,6 +98,54 @@ model.compile(loss='mse', optimizer=rms)
 model.predict(S.reshape(1,9), batch_size=1)
 
 # Learning-------------------------------------------------------
+initial_state = np.repeat(-1.0, 9, axis = 0)
+gamma = 0.5
+epsilon = 0.1
+
+for i in range(10000):
+    # Assume I play 0, opponent plays 1
+    turn = 0
+    S = np.array(initial_state)
+    finished = 0
+    
+    while finished != 1:
+        Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
+        if (random.random() < epsilon): #choose random action
+            action = np.random.randint(0,8)
+        else: #choose best action from Q(s,a) values
+            action = (np.argmax(Q))
+                  
+        new_S = Emulate(S, action, turn)
+        new_Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
+        y = np.array(Q)
+        finished = check_finish(new_S)
+        y[action] = rewards(new_S, action, turn) + (1 - finished) * gamma * max(new_Q)
+        model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=1)
+        # 'Flip' the game board, 0 <-> 1
+        empty = [i for i, s in enumerate(new_S) if s == -1]
+        S = 1 - new_S
+        S[empty] = -1
+
+
+S = np.array([-1,0,0,1,1,-1,-1,-1,-1], dtype = float)    
+model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
