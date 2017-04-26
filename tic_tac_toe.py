@@ -61,7 +61,7 @@ def rewards(state, previou_state, action, turn):
     # If move on occupied space, then heavily penalise
     non_empty = [i for i, s in enumerate(previou_state) if s != -1]   
     if(any(i == action for i in non_empty)):
-        return -100
+        return -10
     else:
         return game_status(state, turn)
 
@@ -83,11 +83,11 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.optimizers import RMSprop
 
 model = Sequential()
-model.add(Dense(50, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(400, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
-#model.add(Dropout(0.2)) I'm not using dropout, but maybe you wanna give it a try?
+#model.add(Dropout(0.2)) #I'm not using dropout, but maybe you wanna give it a try?
 
-model.add(Dense(50, init='lecun_uniform'))
+model.add(Dense(100, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.2))
 
@@ -104,7 +104,7 @@ initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
 
-for rounds in range(10000):
+for rounds in range(5000):
     # Assume I play 0, opponent plays 1
     turn = 0
     S = np.array(initial_state)
@@ -122,18 +122,18 @@ for rounds in range(10000):
         y = np.array(Q)
         finished = check_finish(new_S)
         y[action] = rewards(new_S, S, action, turn) + (1 - finished) * gamma * max(new_Q)
-        model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
+        model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=1)
         
         # 'Flip' the game board, 0 <-> 1
         empty = [i for i, s in enumerate(new_S) if s == -1]
         S = 1 - new_S
         S[empty] = -1
-        print S
+        # print S
     print rounds
 
 
 
-S = np.array([-1,0,0,1,1,-1,-1,-1,-1], dtype = float)    
+S = np.array([-1,0,0,1,-1,-1,-1,1,-1], dtype = float)    
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
 
