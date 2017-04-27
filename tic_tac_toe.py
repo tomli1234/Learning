@@ -49,10 +49,12 @@ def check_finish(state):
     empty = [i for i, s in enumerate(state) if s == -1]
     if len(empty) == 0:
         return 1
+    elif (game_status(S, 0) == 1) or (game_status(S, 1) == 1):
+        return 1
     else:
         return 0
 
-S = np.array([1,1,1,0,0,1,1,1,1], dtype = float)    
+S = np.array([1,-1,1,0,0,1,-1,-1,1], dtype = float)    
 check_finish(S)
         
         
@@ -61,7 +63,7 @@ def rewards(state, previou_state, action, turn):
     # If move on occupied space, then heavily penalise
     non_empty = [i for i, s in enumerate(previou_state) if s != -1]   
     if(any(i == action for i in non_empty)):
-        return -10
+        return -1
     else:
         return game_status(state, turn)
 
@@ -83,7 +85,7 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.optimizers import RMSprop
 
 model = Sequential()
-model.add(Dense(400, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.2)) #I'm not using dropout, but maybe you wanna give it a try?
 
@@ -104,7 +106,7 @@ initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
 
-for rounds in range(5000):
+for rounds in range(50000):
     # Assume I play 0, opponent plays 1
     turn = 0
     S = np.array(initial_state)
@@ -132,8 +134,27 @@ for rounds in range(5000):
     print rounds
 
 
+# Play with me
+initial_state = np.repeat(-1.0, 9, axis = 0)
+turn = 1
+S = np.array(initial_state)
+finished = 0
+while finished != 1:
+    if turn == 1:
+        print S.reshape(3,3)
+        var = raw_input("Please enter something: ")
+        S[var] = 1
+    else:
+        Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
+        action = (np.argmax(Q))
+        S[action] = 0
+    finished = check_finish(S)
+    turn = 1 - turn
+print S.reshape(3,3)
 
-S = np.array([-1,0,0,1,-1,-1,-1,1,-1], dtype = float)    
+
+S = np.array([0,1,1,-1,-1,-1,0,-1,-1], dtype = float)    
+S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
 
