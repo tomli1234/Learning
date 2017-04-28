@@ -42,19 +42,19 @@ def game_status(state, turn):
     else:
         return 0
         
-S = np.array([-1,0,-1,-1,-1,-1,-1,-1,-1], dtype = float)    
+S = np.array([0,0,0,-1,-1,-1,-1,-1,-1], dtype = float)    
 timeit.timeit(lambda: game_status(S, 0), number = 1000)/1000
 
 def check_finish(state):
     empty = [i for i, s in enumerate(state) if s == -1]
     if len(empty) == 0:
         return 1
-    elif (game_status(S, 0) == 1) or (game_status(S, 1) == 1):
+    elif (game_status(state, 0) == 1) or (game_status(state, 1) == 1):
         return 1
     else:
         return 0
 
-S = np.array([1,-1,1,0,0,1,-1,-1,1], dtype = float)    
+S = np.array([0,-1,1,1,0,-1,-1,-1,0], dtype = float)    
 check_finish(S)
         
         
@@ -111,8 +111,10 @@ for rounds in range(50000):
     turn = 0
     S = np.array(initial_state)
     finished = 0
+    counter = 0
     
     while finished != 1:
+      
         Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
         if (random.random() < epsilon): #choose random action
             action = np.random.randint(0,8)
@@ -126,17 +128,32 @@ for rounds in range(50000):
         y[action] = rewards(new_S, S, action, turn) + (1 - finished) * gamma * max(new_Q)
         model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=1)
         
+#==============================================================================
+#         ### Learning from opponent's move (learning defensive move)
+#         if game_status(new_S, 0) == 1 and counter != 0:
+#             y = np.array(last_Q)
+#             y[action_history] = -1 + gamma * max(last_newQ)
+#             model.fit(last_S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=1)
+# 
+#         last_newQ = np.array(new_Q)
+#         last_Q = np.array(Q)
+#         last_S = np.array(S)
+#         action_history = action
+#==============================================================================
+            
         # 'Flip' the game board, 0 <-> 1
         empty = [i for i, s in enumerate(new_S) if s == -1]
         S = 1 - new_S
         S[empty] = -1
+
+        counter = counter + 1
         # print S
     print rounds
 
 
 # Play with me
 initial_state = np.repeat(-1.0, 9, axis = 0)
-turn = 1
+turn = 0
 S = np.array(initial_state)
 finished = 0
 while finished != 1:
@@ -153,7 +170,7 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([0,1,1,-1,-1,-1,0,-1,-1], dtype = float)    
+S = np.array([0,1,1,1,0,-1,0,-1,-1], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
