@@ -60,7 +60,7 @@ check_finish(S)
         
 # Get rewards----------------------------------------------
 def rewards(state, previou_state, action, turn):
-    # If move on occupied space, then heavily penalise
+    # If move on occupied space, then penalise
     non_empty = [i for i, s in enumerate(previou_state) if s != -1]   
     if(any(i == action for i in non_empty)):
         return -1
@@ -87,14 +87,14 @@ from keras.optimizers import RMSprop
 model = Sequential()
 model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
-#model.add(Dropout(0.2)) #I'm not using dropout, but maybe you wanna give it a try?
+#model.add(Dropout(0.2))
 
 model.add(Dense(100, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.2))
 
 model.add(Dense(9, init='lecun_uniform'))
-model.add(Activation('linear')) #linear output so we can have range of real-valued outputs
+model.add(Activation('linear'))
 
 rms = RMSprop()
 model.compile(loss='mse', optimizer=rms)
@@ -106,7 +106,7 @@ initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
 
-for rounds in range(50000):
+for rounds in range(500000):
     # Assume I play 0, opponent plays 1
     turn = 0
     S = np.array(initial_state)
@@ -125,29 +125,28 @@ for rounds in range(50000):
         new_Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
         y = np.array(Q)
         finished = check_finish(new_S)
+        if rewards(new_S, S, action, turn) == -1:
+            finished == 1
         y[action] = rewards(new_S, S, action, turn) + (1 - finished) * gamma * max(new_Q)
-        model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=1)
+        model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
         
-#==============================================================================
-#         ### Learning from opponent's move (learning defensive move)
-#         if game_status(new_S, 0) == 1 and counter != 0:
-#             y = np.array(last_Q)
-#             y[action_history] = -1 + gamma * max(last_newQ)
-#             model.fit(last_S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=1)
-# 
-#         last_newQ = np.array(new_Q)
-#         last_Q = np.array(Q)
-#         last_S = np.array(S)
-#         action_history = action
-#==============================================================================
+        ### Learning from opponent's move (learning defensive move)
+        if game_status(new_S, 0) == 1 and counter != 0:
+            Q = model.predict(last_S.reshape(1,9), batch_size=1).tolist()[0]
+            y = np.array(Q)
+            y[last_action] = -1
+            model.fit(last_S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
+ 
+        last_S = np.array(S)
+        last_action = action
             
         # 'Flip' the game board, 0 <-> 1
         empty = [i for i, s in enumerate(new_S) if s == -1]
-        S = 1 - new_S
+        S = np.array(1 - new_S)
         S[empty] = -1
 
         counter = counter + 1
-        # print S
+#        print S.reshape(3,3)
     print rounds
 
 
@@ -170,7 +169,7 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([0,1,1,1,0,-1,0,-1,-1], dtype = float)    
+S = np.array([1,1,-1,-1,-1,-1,-1,0,0], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
