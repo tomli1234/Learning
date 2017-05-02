@@ -83,15 +83,20 @@ Emulate(S, 7, 0)
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
 from keras.optimizers import RMSprop
+from keras import backend as k
 
 model = Sequential()
-model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(200, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
-#model.add(Dropout(0.2))
+#model.add(Dropout(0.5))
 
 model.add(Dense(100, init='lecun_uniform'))
 model.add(Activation('relu'))
-#model.add(Dropout(0.2))
+#model.add(Dropout(0.5))
+
+model.add(Dense(50, init='lecun_uniform'))
+model.add(Activation('relu'))
+#model.add(Dropout(0.5))
 
 model.add(Dense(9, init='lecun_uniform'))
 model.add(Activation('linear'))
@@ -106,7 +111,7 @@ initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
 
-for rounds in range(500000):
+for rounds in range(5000):
     # Assume I play 0, opponent plays 1
     turn = 0
     S = np.array(initial_state)
@@ -152,7 +157,7 @@ for rounds in range(500000):
 
 # Play with me
 initial_state = np.repeat(-1.0, 9, axis = 0)
-turn = 0
+turn = 1
 S = np.array(initial_state)
 finished = 0
 while finished != 1:
@@ -169,7 +174,7 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([1,1,-1,-1,-1,-1,-1,0,0], dtype = float)    
+S = np.array([1,1,-1,-1,-1,-1,0,0,-1], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
