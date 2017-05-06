@@ -43,7 +43,7 @@ def game_status(state, turn):
         return 0
         
 S = np.array([0,0,0,-1,-1,-1,-1,-1,-1], dtype = float)    
-timeit.timeit(lambda: game_status(S, 0), number = 1000)/1000
+timeit.timeit(lambda: game_status(S, 1), number = 1000)/1000
 
 def check_finish(state):
     empty = [i for i, s in enumerate(state) if s == -1]
@@ -86,11 +86,11 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(200, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(50, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(100, init='lecun_uniform'))
+model.add(Dense(50, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
@@ -123,12 +123,15 @@ for rounds in range(5000):
             action = (np.argmax(Q))
                   
         new_S = Emulate(S, action, turn)
+        r = rewards(new_S, S, action, turn)
+        
+        
         new_Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
         y = np.array(Q)
         finished = check_finish(new_S)
-        if rewards(new_S, S, action, turn) == -1:
+        if r == -1:
             finished == 1
-        y[action] = rewards(new_S, S, action, turn) + (1 - finished) * gamma * max(new_Q)
+        y[action] = r + (1 - finished) * gamma * max(new_Q)
         model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
         
         ### Learning from opponent's move (learning defensive move)
