@@ -108,7 +108,7 @@ gamma = 0.5
 epsilon = 0.1
 D = [] # experience
 D_size = 500
-batch_size = 20
+batch_size = 10
 
 for rounds in range(10000):
     # Assume I play 0, opponent plays 1
@@ -137,9 +137,10 @@ for rounds in range(10000):
         X_train = []
         Y_train = []
         for memory in minibatch:
-            S, new_S, action, r = memory  
+            S, new_S, action, r = memory 
+            old_Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
             new_Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
-            y = np.array(Q)
+            y = np.array(old_Q)
             finished = check_finish(new_S)
             if r == -1:
                 finished == 1
@@ -190,7 +191,7 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([-1,1,-1,-1,-1,-1,0,0,-1], dtype = float)    
+S = np.array([1,1,-1,-1,-1,-1,0,0,-1], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
