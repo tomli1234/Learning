@@ -107,8 +107,10 @@ initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
 D = [] # experience
+D_size = 500
+batch_size = 20
 
-for rounds in range(5000):
+for rounds in range(10000):
     # Assume I play 0, opponent plays 1
     turn = 0
     S = np.array(initial_state)
@@ -126,17 +128,28 @@ for rounds in range(5000):
         r = rewards(new_S, S, action, turn)
         
         # memorise experience
+        if len(D) > D_size:
+            D = D[1:] # remove the first
         D.append([S, new_S, action, r])
-        memory = np.random.randint(0, len(D))
-        S, new_S, action, r = D[memory]
+
+        # Learning
+        minibatch = random.sample(D, min(batch_size, len(D)))
+        X_train = []
+        Y_train = []
+        for memory in minibatch:
+            S, new_S, action, r = memory  
+            new_Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
+            y = np.array(Q)
+            finished = check_finish(new_S)
+            if r == -1:
+                finished == 1
+            y[action] = r + (1 - finished) * gamma * max(new_Q)
+            
+            X_train.append(S)
+            Y_train.append(y)
         
-        new_Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
-        y = np.array(Q)
-        finished = check_finish(new_S)
-        if r == -1:
-            finished == 1
-        y[action] = r + (1 - finished) * gamma * max(new_Q)
-        model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
+        
+        model.fit(np.array(X_train), np.array(Y_train), batch_size=1, nb_epoch=1, verbose=0)
         
         ### Learning from opponent's move (learning defensive move)
 #        if game_status(new_S, 0) == 1 and counter != 0:
@@ -177,7 +190,7 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([1,1,-1,-1,-1,-1,0,0,-1], dtype = float)    
+S = np.array([-1,1,-1,-1,-1,-1,0,0,-1], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
