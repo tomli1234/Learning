@@ -106,6 +106,7 @@ model.predict(S.reshape(1,9), batch_size=1)
 initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
+D = [] # experience
 
 for rounds in range(5000):
     # Assume I play 0, opponent plays 1
@@ -121,10 +122,13 @@ for rounds in range(5000):
             action = np.random.randint(0,8)
         else: #choose best action from Q(s,a) values
             action = (np.argmax(Q))
-                  
         new_S = Emulate(S, action, turn)
         r = rewards(new_S, S, action, turn)
         
+        # memorise experience
+        D.append([S, new_S, action, r])
+        memory = np.random.randint(0, len(D))
+        S, new_S, action, r = D[memory]
         
         new_Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
         y = np.array(Q)
@@ -135,14 +139,14 @@ for rounds in range(5000):
         model.fit(S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
         
         ### Learning from opponent's move (learning defensive move)
-        if game_status(new_S, 0) == 1 and counter != 0:
-            Q = model.predict(last_S.reshape(1,9), batch_size=1).tolist()[0]
-            y = np.array(Q)
-            y[last_action] = -1
-            model.fit(last_S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
- 
-        last_S = np.array(S)
-        last_action = action
+#        if game_status(new_S, 0) == 1 and counter != 0:
+#            Q = model.predict(last_S.reshape(1,9), batch_size=1).tolist()[0]
+#            y = np.array(Q)
+#            y[last_action] = -1
+#            model.fit(last_S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
+# 
+#        last_S = np.array(S)
+#        last_action = action
             
         # 'Flip' the game board, 0 <-> 1
         empty = [i for i, s in enumerate(new_S) if s == -1]
@@ -156,7 +160,7 @@ for rounds in range(5000):
 
 # Play with me
 initial_state = np.repeat(-1.0, 9, axis = 0)
-turn = 1
+turn = 0
 S = np.array(initial_state)
 finished = 0
 while finished != 1:
