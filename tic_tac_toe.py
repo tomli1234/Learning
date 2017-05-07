@@ -86,11 +86,11 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(50, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(40, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(50, init='lecun_uniform'))
+model.add(Dense(20, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
@@ -137,16 +137,16 @@ for rounds in range(5000):
         X_train = []
         Y_train = []
         for memory in minibatch:
-            S, new_S, action, r = memory 
-            old_Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
-            new_Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
+            S_mem, new_S_mem, action_mem, r_mem = memory 
+            old_Q = model.predict(S_mem.reshape(1,9), batch_size=1).tolist()[0]
+            new_Q = model.predict(new_S_mem.reshape(1,9), batch_size=1).tolist()[0]
             y = np.array(old_Q)
             finished = check_finish(new_S)
-            if r == -1:
+            if r_mem == -1:
                 finished == 1
-            y[action] = r + (1 - finished) * gamma * max(new_Q)
+            y[action_mem] = r_mem + (1 - finished) * gamma * max(new_Q)
             
-            X_train.append(S)
+            X_train.append(S_mem)
             Y_train.append(y)
         
         
