@@ -88,11 +88,11 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(30, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(50, init='lecun_uniform'))
+model.add(Dense(30, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
@@ -109,10 +109,10 @@ initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
 D = [] # experience
-D_size = 500
+D_size = 100
 batch_size = 1
 
-for rounds in range(50000):
+for rounds in range(5000):
     # Assume I play 0, opponent plays 1
     turn = 0
     S = np.array(initial_state)
@@ -193,7 +193,7 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([1,1,-1,-1,-1,-1,0,0,-1], dtype = float)    
+S = np.array([1,1,-1,-1,-1,-1,0,-1,0], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
