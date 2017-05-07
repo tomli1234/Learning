@@ -107,10 +107,10 @@ initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
 D = [] # experience
-D_size = 2
-batch_size = 1
+D_size = 100
+batch_size = 10
 
-for rounds in range(10000):
+for rounds in range(5000):
     # Assume I play 0, opponent plays 1
     turn = 0
     S = np.array(initial_state)
@@ -198,15 +198,15 @@ np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
 # Test play
 win = 0
-penalty = 0
 for game in range(1000):
     initial_state = np.repeat(-1.0, 9, axis = 0)
     turn = np.random.randint(0, 1)
     S = np.array(initial_state)
     finished = 0
+    penalty = 0
     while finished != 1:
         if turn == 1:
-            empty = [i for i, s in enumerate(new_S) if s == -1]
+            empty = [i for i, s in enumerate(S) if s == -1]
             var =  random.sample(empty, 1)
             S[var] = 1
         else:
@@ -214,31 +214,15 @@ for game in range(1000):
             Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
             action = (np.argmax(Q))
             S[action] = 0
-            if(any(i == action for i in non_empty)):
-                penalty = 1
-                finish = 1
         finished = check_finish(S)
+        if(any(i == action for i in non_empty)):
+            penalty = 1
+            finish = 1
         turn = 1 - turn
     if game_status(S, 0) == 1 and penalty != 1:
         win += 1
     
 win
-
-
-
-
-    non_empty = [i for i, s in enumerate(previou_state) if s != -1]   
-    if(any(i == action for i in non_empty)):
-        return -1
-
-
-
-
-
-
-
-
-
 
 
 
