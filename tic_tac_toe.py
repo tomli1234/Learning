@@ -86,16 +86,16 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(40, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(20, init='lecun_uniform'))
+model.add(Dense(50, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
 model.add(Dense(9, init='lecun_uniform'))
-model.add(Activation('linear'))
+model.add(Activation('sigmoid'))
 
 rms = RMSprop()
 model.compile(loss='mse', optimizer=rms)
@@ -107,8 +107,8 @@ initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
 epsilon = 0.1
 D = [] # experience
-D_size = 100
-batch_size = 10
+D_size = 500
+batch_size = 1
 
 for rounds in range(5000):
     # Assume I play 0, opponent plays 1
