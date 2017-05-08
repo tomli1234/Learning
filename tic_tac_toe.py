@@ -92,7 +92,11 @@ model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(100, init='lecun_uniform'))
+model.add(Dense(70, init='lecun_uniform'))
+model.add(Activation('relu'))
+#model.add(Dropout(0.5))
+
+model.add(Dense(50, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
@@ -105,78 +109,78 @@ model.compile(loss='mse', optimizer=rms)
 model.predict(S.reshape(1,9), batch_size=1)
 
 # Learning-------------------------------------------------------
-initial_state = np.repeat(-1.0, 9, axis = 0)
-gamma = 0.5
-epsilon = 0.05
-D = [] # experience
-D_size = 100
-batch_size = 1
-
-for rounds in range(10000):
-    # Assume I play 0, opponent plays 1
-    turn = 0
-    S = np.array(initial_state)
-    finished = 0
-    counter = 0
+def learning(n_round):
+    initial_state = np.repeat(-1.0, 9, axis = 0)
+    gamma = 0.5
+    epsilon = 0.05
+    D = [] # experience
+    D_size = 200
+    batch_size = 5
+    for rounds in range(n_round):
+        # Assume I play 0, opponent plays 1
+        turn = 0
+        S = np.array(initial_state)
+        finished = 0
+        counter = 0
+        
+        while finished != 1:
+          
+            Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
+            if (random.random() < epsilon): #choose random action
+                action = np.random.randint(0,8)
+            else: #choose best action from Q(s,a) values
+                action = (np.argmax(Q))
+            new_S = Emulate(S, action, turn)
+            r = rewards(new_S, S, action, turn)
+            
+            # memorise experience
+            if len(D) > D_size:
+                D = D[1:] # remove the first
+            D.append([S, new_S, action, r])
     
-    while finished != 1:
-      
-        Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
-        if (random.random() < epsilon): #choose random action
-            action = np.random.randint(0,8)
-        else: #choose best action from Q(s,a) values
-            action = (np.argmax(Q))
-        new_S = Emulate(S, action, turn)
-        r = rewards(new_S, S, action, turn)
-        
-        # memorise experience
-        if len(D) > D_size:
-            D = D[1:] # remove the first
-        D.append([S, new_S, action, r])
-
-        # Learning
-        minibatch = random.sample(D, min(batch_size, len(D)))
-        X_train = []
-        Y_train = []
-        for memory in minibatch:
-            S_mem, new_S_mem, action_mem, r_mem = memory 
-            old_Q = model.predict(S_mem.reshape(1,9), batch_size=1).tolist()[0]
-            new_Q = model.predict(new_S_mem.reshape(1,9), batch_size=1).tolist()[0]
-            y = np.array(old_Q)
-            finished_mem = check_finish(new_S_mem)
-            if r_mem == -1:
-                finished_mem == 1
-            y[action_mem] = r_mem + (1 - finished_mem) * gamma * max(new_Q)
+            # Learning
+            minibatch = random.sample(D, min(batch_size, len(D)))
+            X_train = []
+            Y_train = []
+            for memory in minibatch:
+                S_mem, new_S_mem, action_mem, r_mem = memory 
+                old_Q = model.predict(S_mem.reshape(1,9), batch_size=1).tolist()[0]
+                new_Q = model.predict(new_S_mem.reshape(1,9), batch_size=1).tolist()[0]
+                y = np.array(old_Q)
+                finished_mem = check_finish(new_S_mem)
+                if r_mem == -1:
+                    finished_mem == 1
+                y[action_mem] = r_mem + (1 - finished_mem) * gamma * max(new_Q)
+                
+                X_train.append(S_mem)
+                Y_train.append(y)
+                  
+            model.fit(np.array(X_train), np.array(Y_train), batch_size=1, nb_epoch=1, verbose=0)
             
-            X_train.append(S_mem)
-            Y_train.append(y)
-        
-        
-        model.fit(np.array(X_train), np.array(Y_train), batch_size=1, nb_epoch=1, verbose=0)
-        
-        ### Learning from opponent's move (learning defensive move)
-#        if game_status(new_S, 0) == 1 and counter != 0:
-#            Q = model.predict(last_S.reshape(1,9), batch_size=1).tolist()[0]
-#            y = np.array(Q)
-#            y[last_action] = -1
-#            model.fit(last_S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
-# 
-#        last_S = np.array(S)
-#        last_action = action
+            ### Learning from opponent's move (learning defensive move)
+    #        if game_status(new_S, 0) == 1 and counter != 0:
+    #            Q = model.predict(last_S.reshape(1,9), batch_size=1).tolist()[0]
+    #            y = np.array(Q)
+    #            y[last_action] = -1
+    #            model.fit(last_S.reshape(1,9), y.reshape(1,9), batch_size=1, nb_epoch=1, verbose=0)
+    # 
+    #        last_S = np.array(S)
+    #        last_action = action
+    
+            finished = check_finish(new_S)
+            if r == -1:
+                finished == 1
+                
+            # 'Flip' the game board, 0 <-> 1
+            empty = [i for i, s in enumerate(new_S) if s == -1]
+            S = np.array(1 - new_S)
+            S[empty] = -1
+    
+            counter = counter + 1
+    #        print S.reshape(3,3)
+        print rounds
 
-        finished = check_finish(new_S)
-        if r == -1:
-            finished == 1
-            
-        # 'Flip' the game board, 0 <-> 1
-        empty = [i for i, s in enumerate(new_S) if s == -1]
-        S = np.array(1 - new_S)
-        S[empty] = -1
-
-        counter = counter + 1
-#        print S.reshape(3,3)
-    print rounds
-
+learning(100)
 
 # Play with me
 initial_state = np.repeat(-1.0, 9, axis = 0)
@@ -197,41 +201,48 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([1,1,-1,-1,-1,-1,0,-1,0], dtype = float)    
+S = np.array([1,1,-1,-1,-1,-1,-1,0,0], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
 
 # Test play
-win = 0
-for game in range(1000):
-    initial_state = np.repeat(-1.0, 9, axis = 0)
-    turn = np.random.randint(0, 1)
-    S = np.array(initial_state)
-    finished = 0
-    penalty = 0
-    while finished != 1:
-        if turn == 1:
-            empty = [i for i, s in enumerate(S) if s == -1]
-            var =  random.sample(empty, 1)
-            S[var] = 1
-        else:
-            non_empty = [i for i, s in enumerate(S) if s != -1]   
-            Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
-            action = (np.argmax(Q))
-            S[action] = 0
-        finished = check_finish(S)
-        if(any(i == action for i in non_empty)):
-            penalty = 1
-            finish = 1
-        turn = 1 - turn
-    if game_status(S, 0) == 1 and penalty != 1:
-        win += 1
-    
-win
-
-
-
-
+def test_play():
+    win = 0
+    for game in range(1000):
+        initial_state = np.repeat(-1.0, 9, axis = 0)
+        turn = np.random.randint(0, 1)
+        S = np.array(initial_state)
+        finished = 0
+        penalty = 0
+        while finished != 1:
+            if turn == 1:
+                empty = [i for i, s in enumerate(S) if s == -1]
+                var =  random.sample(empty, 1)
+                S[var] = 1
+            else:
+                non_empty = [i for i, s in enumerate(S) if s != -1]   
+                Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
+                action = (np.argmax(Q))
+                S[action] = 0
+            finished = check_finish(S)
+            if(any(i == action for i in non_empty)):
+                penalty = 1
+                finish = 1
+            turn = 1 - turn
+        if game_status(S, 0) == 1 and penalty != 1:
+            win += 1
         
+    return win
+
+result = []
+for i in range(1000):
+    learning(10)
+    result.append(test_play())
+
+import matplotlib.pyplot as plt        
+
+plt.figure()
+plt.plot(range(1000), result)
+
         
