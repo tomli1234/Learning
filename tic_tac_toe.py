@@ -63,11 +63,11 @@ def rewards(state, previou_state, action, turn):
     # If move on occupied space, then penalise
     non_empty = [i for i, s in enumerate(previou_state) if s != -1]   
     if(any(i == action for i in non_empty)):
-        return 0
+        return -1
     elif game_status(state, turn) == 1:
         return 1
     else:
-        return 0.5
+        return 0
 
 S = np.array([1,1,1,0,0,-1,-1,1,1], dtype = float)    
 S2 = np.array([1,1,1,0,0,-1,-1,1,0], dtype = float)    
@@ -88,16 +88,16 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(30, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(30, init='lecun_uniform'))
+model.add(Dense(100, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
 model.add(Dense(9, init='lecun_uniform'))
-model.add(Activation('sigmoid'))
+model.add(Activation('linear'))
 
 rms = RMSprop()
 model.compile(loss='mse', optimizer=rms)
@@ -107,12 +107,12 @@ model.predict(S.reshape(1,9), batch_size=1)
 # Learning-------------------------------------------------------
 initial_state = np.repeat(-1.0, 9, axis = 0)
 gamma = 0.5
-epsilon = 0.1
+epsilon = 0.05
 D = [] # experience
 D_size = 100
 batch_size = 1
 
-for rounds in range(5000):
+for rounds in range(10000):
     # Assume I play 0, opponent plays 1
     turn = 0
     S = np.array(initial_state)
@@ -143,10 +143,10 @@ for rounds in range(5000):
             old_Q = model.predict(S_mem.reshape(1,9), batch_size=1).tolist()[0]
             new_Q = model.predict(new_S_mem.reshape(1,9), batch_size=1).tolist()[0]
             y = np.array(old_Q)
-            finished = check_finish(new_S)
-            if r_mem == 0:
-                finished == 1
-            y[action_mem] = r_mem + (1 - finished) * gamma * max(new_Q)
+            finished_mem = check_finish(new_S_mem)
+            if r_mem == -1:
+                finished_mem == 1
+            y[action_mem] = r_mem + (1 - finished_mem) * gamma * max(new_Q)
             
             X_train.append(S_mem)
             Y_train.append(y)
@@ -163,6 +163,10 @@ for rounds in range(5000):
 # 
 #        last_S = np.array(S)
 #        last_action = action
+
+        finished = check_finish(new_S)
+        if r == -1:
+            finished == 1
             
         # 'Flip' the game board, 0 <-> 1
         empty = [i for i, s in enumerate(new_S) if s == -1]
