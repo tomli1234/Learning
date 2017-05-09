@@ -8,6 +8,8 @@
 import numpy as np
 import timeit
 import random
+import matplotlib.pyplot as plt        
+
 
 # Identify possible moves-----------------------------------
 def possible_moves(state, turn):
@@ -88,15 +90,11 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(40, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(70, init='lecun_uniform'))
-model.add(Activation('relu'))
-#model.add(Dropout(0.5))
-
-model.add(Dense(50, init='lecun_uniform'))
+model.add(Dense(40, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
@@ -114,8 +112,8 @@ def learning(n_round):
     gamma = 0.5
     epsilon = 0.05
     D = [] # experience
-    D_size = 200
-    batch_size = 5
+    D_size = 100
+    batch_size = 1
     for rounds in range(n_round):
         # Assume I play 0, opponent plays 1
         turn = 0
@@ -127,7 +125,7 @@ def learning(n_round):
           
             Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
             if (random.random() < epsilon): #choose random action
-                action = np.random.randint(0,8)
+                action = np.random.randint(0,9)
             else: #choose best action from Q(s,a) values
                 action = (np.argmax(Q))
             new_S = Emulate(S, action, turn)
@@ -211,11 +209,12 @@ def test_play():
     win = 0
     for game in range(1000):
         initial_state = np.repeat(-1.0, 9, axis = 0)
-        turn = np.random.randint(0, 1)
+        turn = np.random.randint(0, 2)
         S = np.array(initial_state)
         finished = 0
         penalty = 0
         while finished != 1:
+            non_empty = []
             if turn == 1:
                 empty = [i for i, s in enumerate(S) if s == -1]
                 var =  random.sample(empty, 1)
@@ -225,10 +224,12 @@ def test_play():
                 Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
                 action = (np.argmax(Q))
                 S[action] = 0
+
             finished = check_finish(S)
+            
             if(any(i == action for i in non_empty)):
                 penalty = 1
-                finish = 1
+                finished = 1
             turn = 1 - turn
         if game_status(S, 0) == 1 and penalty != 1:
             win += 1
@@ -236,13 +237,11 @@ def test_play():
     return win
 
 result = []
-for i in range(1000):
+for i in range(10):
     learning(10)
     result.append(test_play())
 
-import matplotlib.pyplot as plt        
-
-plt.figure()
-plt.plot(range(1000), result)
+#plt.figure()
+plt.plot(range(len(result)), result)
 
         
