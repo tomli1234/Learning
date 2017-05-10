@@ -61,19 +61,19 @@ check_finish(S)
         
         
 # Get rewards----------------------------------------------
-def rewards(state, previou_state, action, turn):
+def rewards(state, previou_state, action):
     # If move on occupied space, then penalise
     non_empty = [i for i, s in enumerate(previou_state) if s != -1]   
     if(any(i == action for i in non_empty)):
         return -1
-    elif game_status(state, turn) == 1:
+    elif game_status(state, 0) == 1:
         return 1
     else:
         return 0
 
-S = np.array([1,1,1,0,0,-1,-1,1,1], dtype = float)    
-S2 = np.array([1,1,1,0,0,-1,-1,1,0], dtype = float)    
-rewards(S2, S, 8, 1)
+S = np.array([1,1,-1,0,0,-1,-1,1,-1], dtype = float)    
+S2 = np.array([1,1,-1,0,0,-1,-1,1,0], dtype = float)    
+rewards(S2, S, 8)
 
 # Emulate---------------------------------------------------
 def Emulate(state, action, turn):
@@ -90,11 +90,11 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(40, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(40, init='lecun_uniform'))
+model.add(Dense(100, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
@@ -110,9 +110,9 @@ model.predict(S.reshape(1,9), batch_size=1)
 def learning(n_round):
     initial_state = np.repeat(-1.0, 9, axis = 0)
     gamma = 0.5
-    epsilon = 0.05
+    epsilon = 0.1
     D = [] # experience
-    D_size = 100
+    D_size = 50
     batch_size = 1
     for rounds in range(n_round):
         # Assume I play 0, opponent plays 1
@@ -129,7 +129,7 @@ def learning(n_round):
             else: #choose best action from Q(s,a) values
                 action = (np.argmax(Q))
             new_S = Emulate(S, action, turn)
-            r = rewards(new_S, S, action, turn)
+            r = rewards(new_S, S, action)
             
             # memorise experience
             if len(D) > D_size:
@@ -199,7 +199,7 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([1,1,-1,-1,-1,-1,-1,0,0], dtype = float)    
+S = np.array([0,0,-1,-1,-1,-1,1,1,-1], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
@@ -237,7 +237,7 @@ def test_play():
     return win
 
 result = []
-for i in range(10):
+for i in range(500000):
     learning(10)
     result.append(test_play())
 
