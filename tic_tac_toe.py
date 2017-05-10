@@ -111,9 +111,11 @@ def learning(n_round):
     initial_state = np.repeat(-1.0, 9, axis = 0)
     gamma = 0.5
     epsilon = 0.1
-    D = [] # experience
-    D_size = 50
-    batch_size = 1
+    Exp = [] # experience
+    WinExp = [] # winning experience
+    Exp_size = 50
+    WinExp_size = 50
+    batch_size = 5
     for rounds in range(n_round):
         # Assume I play 0, opponent plays 1
         turn = 0
@@ -132,12 +134,21 @@ def learning(n_round):
             r = rewards(new_S, S, action)
             
             # memorise experience
-            if len(D) > D_size:
-                D = D[1:] # remove the first
-            D.append([S, new_S, action, r])
-    
+            # Combine both winning and losing experience
+            if r == 1:
+                if len(WinExp) > WinExp_size:
+                    WinExp = WinExp[1:] # remove the first
+                WinExp.append([S, new_S, action, r])
+            else:
+                if len(Exp) > Exp_size:
+                    Exp = Exp[1:] # remove the first
+                Exp.append([S, new_S, action, r])
+
+            AllExp = [WinExp, Exp]
+            AllExp = [AllExp[i][0] for i in range(len(AllExp)) if AllExp[i] != []]
+                
             # Learning
-            minibatch = random.sample(D, min(batch_size, len(D)))
+            minibatch = random.sample(AllExp, min(batch_size, len(AllExp)))
             X_train = []
             Y_train = []
             for memory in minibatch:
@@ -176,7 +187,7 @@ def learning(n_round):
     
             counter = counter + 1
     #        print S.reshape(3,3)
-        print rounds
+        print rounds, len(WinExp), len(Exp)
 
 learning(100)
 
@@ -238,7 +249,7 @@ def test_play():
 
 result = []
 for i in range(500000):
-    learning(10)
+    learning(1000)
     result.append(test_play())
 
 #plt.figure()
