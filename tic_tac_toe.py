@@ -90,11 +90,11 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(300, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(100, init='lecun_uniform'))
+model.add(Dense(300, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
@@ -107,15 +107,15 @@ model.compile(loss='mse', optimizer=rms)
 model.predict(S.reshape(1,9), batch_size=1)
 
 # Learning-------------------------------------------------------
-def learning(n_round):
+def learning(n_round, WinExp, Exp):
     initial_state = np.repeat(-1.0, 9, axis = 0)
     gamma = 0.5
     epsilon = 0.1
-    Exp = [] # experience
-    WinExp = [] # winning experience
-    Exp_size = 50
-    WinExp_size = 50
-    batch_size = 5
+#    Exp = [] # experience
+#    WinExp = [] # winning experience
+    Exp_size = 30
+    WinExp_size = 30
+    batch_size = 2
     for rounds in range(n_round):
         # Assume I play 0, opponent plays 1
         turn = 0
@@ -187,7 +187,7 @@ def learning(n_round):
     
             counter = counter + 1
     #        print S.reshape(3,3)
-        print rounds, len(WinExp), len(Exp)
+#        print rounds
 
 learning(100)
 
@@ -247,12 +247,16 @@ def test_play():
         
     return win
 
+    
 result = []
-for i in range(500000):
-    learning(1000)
-    result.append(test_play())
+Exp = [] # experience
+WinExp = [] # winning experience
 
-#plt.figure()
-plt.plot(range(len(result)), result)
+for i in range(500):
+    learning(100, WinExp, Exp)
+    result.append(test_play())
+    plt.figure()
+    plt.plot(range(len(result)), result)
+    plt.show()
 
         
