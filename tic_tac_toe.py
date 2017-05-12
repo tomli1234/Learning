@@ -103,19 +103,19 @@ model.add(Activation('linear'))
 
 rms = RMSprop()
 model.compile(loss='mse', optimizer=rms)
-
 model.predict(S.reshape(1,9), batch_size=1)
 
 # Learning-------------------------------------------------------
 def learning(n_round, WinExp, Exp):
+
     initial_state = np.repeat(-1.0, 9, axis = 0)
     gamma = 0.5
     epsilon = 0.1
 #    Exp = [] # experience
 #    WinExp = [] # winning experience
-    Exp_size = 30
-    WinExp_size = 30
-    batch_size = 2
+    Exp_size = 200
+    WinExp_size = 200
+    batch_size = 5
     for rounds in range(n_round):
         # Assume I play 0, opponent plays 1
         turn = 0
@@ -253,7 +253,7 @@ Exp = [] # experience
 WinExp = [] # winning experience
 
 for i in range(500):
-    learning(100, WinExp, Exp)
+    learning(5000, WinExp, Exp)
     result.append(test_play())
     plt.figure()
     plt.plot(range(len(result)), result)
