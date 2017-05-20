@@ -106,16 +106,16 @@ model.compile(loss='mse', optimizer=rms)
 model.predict(S.reshape(1,9), batch_size=1)
 
 # Learning-------------------------------------------------------
-def learning(n_round, WinExp, Exp):
+def learning(n_round, WinExp, Exp, epsilon):
 
     initial_state = np.repeat(-1.0, 9, axis = 0)
     gamma = 0.5
-    epsilon = 0.1
+#    epsilon = 0.1
 #    Exp = [] # experience
 #    WinExp = [] # winning experience
-    Exp_size = 200
-    WinExp_size = 200
-    batch_size = 5
+    Exp_size = 500
+    WinExp_size = 50
+    batch_size = 20
     for rounds in range(n_round):
         # Assume I play 0, opponent plays 1
         turn = 0
@@ -135,7 +135,7 @@ def learning(n_round, WinExp, Exp):
             
             # memorise experience
             # Combine both winning and losing experience
-            if r == 1:
+            if r >= 0:
                 if len(WinExp) > WinExp_size:
                     WinExp = WinExp[1:] # remove the first
                 WinExp.append([S, new_S, action, r])
@@ -210,7 +210,7 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([0,0,-1,-1,-1,-1,1,1,-1], dtype = float)    
+S = np.array([-1,0,0,-1,-1,-1,1,1,-1], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
@@ -251,9 +251,11 @@ def test_play():
 result = []
 Exp = [] # experience
 WinExp = [] # winning experience
+epsilon = 0.5
 
 for i in range(500):
-    learning(5000, WinExp, Exp)
+    epsilon = epsilon*0.95
+    learning(5000, WinExp, Exp, epsilon)
     result.append(test_play())
     plt.figure()
     plt.plot(range(len(result)), result)
