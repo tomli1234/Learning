@@ -108,11 +108,11 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(200, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(100, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(200, init='lecun_uniform'))
+model.add(Dense(100, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
@@ -131,8 +131,8 @@ def learning(n_round, WinExp, Exp, epsilon):
 #    epsilon = 0.1
 #    Exp = [] # experience
 #    WinExp = [] # winning experience
-    Exp_size = 50
-    WinExp_size = 50
+    Exp_size = 10
+    WinExp_size = 100
     batch_size = 10
     for rounds in range(n_round):
         # Assume I play 0, opponent plays 1
@@ -151,15 +151,18 @@ def learning(n_round, WinExp, Exp, epsilon):
             new_S = Emulate(S, action, 0)
             r = rewards(new_S, S, action)
             finished = check_finish(new_S)
+
             # If not finished, let oppenent plays a move
             if r == 0 and finished != 1:
                 new_S = flip_board(new_S)
-                empty = [i for i, s in enumerate(new_S) if s == -1]   
-                Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
-                Q = [Q[i] for i in empty]
-                action = np.argmax(Q)
-                new_S = Emulate(new_S, action, 0)
+                S_1 = new_S
+                action_1 = make_a_move(S_1, 0)
+                new_S = Emulate(new_S, action_1, 0)
+                r_1 = rewards(new_S, S_1, action_1)
+                finished = check_finish(new_S)
                 new_S = flip_board(new_S)
+                if r_1 != 0 or finished == 1:
+                    break
                 
             # memorise experience
             # Combine both winning and losing experience
@@ -206,7 +209,7 @@ def learning(n_round, WinExp, Exp, epsilon):
     
             finished = check_finish(new_S)
             if r != 0:
-                finished == 1
+                finished = 1
             
             S = new_S
 
@@ -280,7 +283,7 @@ epsilon = 0.5
 
 for i in range(500):
     epsilon = epsilon*0.95
-    learning(500, WinExp, Exp, epsilon)
+    learning(1000, WinExp, Exp, epsilon)
     result.append(test_play())
     plt.figure()
     plt.plot(range(len(result)), result)
