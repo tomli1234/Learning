@@ -83,6 +83,24 @@ def Emulate(state, action, turn):
 
 Emulate(S, 7, 0)
 
+# Make a move----------------------------------------------
+def make_a_move(S, epsilon):
+    Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
+    if (random.random() < epsilon): #choose random action
+        action = np.random.randint(0,9)
+    else: #choose best action from Q(s,a) values
+        action = (np.argmax(Q))
+    return action
+
+# 'Flip' the game board, 0 <-> 1-------------------------------
+def flip_board(new_S):
+    empty = [i for i, s in enumerate(new_S) if s == -1]
+    S = np.array(1 - new_S)
+    S[empty] = -1 
+
+    return S 
+        
+    
 # Deep neural net----------------------------------------------
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
@@ -90,11 +108,11 @@ from keras.optimizers import RMSprop
 from keras import backend as k
 
 model = Sequential()
-model.add(Dense(300, init='lecun_uniform', input_shape=(9,)))
+model.add(Dense(200, init='lecun_uniform', input_shape=(9,)))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
-model.add(Dense(300, init='lecun_uniform'))
+model.add(Dense(200, init='lecun_uniform'))
 model.add(Activation('relu'))
 #model.add(Dropout(0.5))
 
@@ -113,26 +131,36 @@ def learning(n_round, WinExp, Exp, epsilon):
 #    epsilon = 0.1
 #    Exp = [] # experience
 #    WinExp = [] # winning experience
-    Exp_size = 500
+    Exp_size = 50
     WinExp_size = 50
-    batch_size = 20
+    batch_size = 10
     for rounds in range(n_round):
         # Assume I play 0, opponent plays 1
-        turn = 0
+        turn = np.random.randint(0,2)
         S = np.array(initial_state)
+        if turn == 1:
+            action = make_a_move(S, epsilon)
+            S = Emulate(S, action, turn)
+           
         finished = 0
         counter = 0
         
         while finished != 1:
           
-            Q = model.predict(S.reshape(1,9), batch_size=1).tolist()[0]
-            if (random.random() < epsilon): #choose random action
-                action = np.random.randint(0,9)
-            else: #choose best action from Q(s,a) values
-                action = (np.argmax(Q))
-            new_S = Emulate(S, action, turn)
+            action = make_a_move(S, epsilon)
+            new_S = Emulate(S, action, 0)
             r = rewards(new_S, S, action)
-            
+            finished = check_finish(new_S)
+            # If not finished, let oppenent plays a move
+            if r == 0 and finished != 1:
+                new_S = flip_board(new_S)
+                empty = [i for i, s in enumerate(new_S) if s == -1]   
+                Q = model.predict(new_S.reshape(1,9), batch_size=1).tolist()[0]
+                Q = [Q[i] for i in empty]
+                action = np.argmax(Q)
+                new_S = Emulate(new_S, action, 0)
+                new_S = flip_board(new_S)
+                
             # memorise experience
             # Combine both winning and losing experience
             if r >= 0:
@@ -177,14 +205,11 @@ def learning(n_round, WinExp, Exp, epsilon):
     #        last_action = action
     
             finished = check_finish(new_S)
-            if r == -1:
+            if r != 0:
                 finished == 1
-                
-            # 'Flip' the game board, 0 <-> 1
-            empty = [i for i, s in enumerate(new_S) if s == -1]
-            S = np.array(1 - new_S)
-            S[empty] = -1
-    
+            
+            S = new_S
+
             counter = counter + 1
     #        print S.reshape(3,3)
 #        print rounds
@@ -255,7 +280,7 @@ epsilon = 0.5
 
 for i in range(500):
     epsilon = epsilon*0.95
-    learning(5000, WinExp, Exp, epsilon)
+    learning(500, WinExp, Exp, epsilon)
     result.append(test_play())
     plt.figure()
     plt.plot(range(len(result)), result)
