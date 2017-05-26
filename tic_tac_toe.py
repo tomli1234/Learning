@@ -9,6 +9,7 @@ import numpy as np
 import timeit
 import random
 import matplotlib.pyplot as plt        
+import pandas as pd
 
 
 # Identify possible moves-----------------------------------
@@ -71,9 +72,9 @@ def rewards(state, previou_state, action):
     else:
         return 0
 
-S = np.array([1,1,-1,0,0,-1,-1,1,-1], dtype = float)    
-S2 = np.array([1,1,-1,0,0,-1,-1,1,0], dtype = float)    
-rewards(S2, S, 8)
+S = np.array([1,1,-1,0,0,-1,-1,-1,-1], dtype = float)    
+S2 = np.array([1,1,-1,0,0,0,-1,-1,-1], dtype = float)    
+rewards(S2, S, 5)
 
 # Emulate---------------------------------------------------
 def Emulate(state, action, turn):
@@ -131,9 +132,10 @@ def learning(n_round, WinExp, Exp, epsilon):
 #    epsilon = 0.1
 #    Exp = [] # experience
 #    WinExp = [] # winning experience
-    Exp_size = 10
-    WinExp_size = 100
-    batch_size = 10
+    Exp_size = 500
+    WinExp_size = 200
+    batch_size = 5
+    r_record = []
     for rounds in range(n_round):
         # Assume I play 0, opponent plays 1
         turn = np.random.randint(0,2)
@@ -214,6 +216,8 @@ def learning(n_round, WinExp, Exp, epsilon):
             S = new_S
 
             counter = counter + 1
+            r_record.append(r)
+    return r_record
     #        print S.reshape(3,3)
 #        print rounds
 
@@ -221,7 +225,7 @@ learning(100)
 
 # Play with me
 initial_state = np.repeat(-1.0, 9, axis = 0)
-turn = 0
+turn = 1
 S = np.array(initial_state)
 finished = 0
 while finished != 1:
@@ -238,7 +242,7 @@ while finished != 1:
 print S.reshape(3,3)
 
 
-S = np.array([-1,0,0,-1,-1,-1,1,1,-1], dtype = float)    
+S = np.array([0,-1,0,0,1,-1,1,1,-1], dtype = float)    
 S.reshape(3,3)
 np.argmax(model.predict(S.reshape(1,9), batch_size=1).tolist()[0])
 
@@ -248,7 +252,8 @@ def test_play():
     win = 0
     for game in range(1000):
         initial_state = np.repeat(-1.0, 9, axis = 0)
-        turn = np.random.randint(0, 2)
+#        turn = np.random.randint(0, 2)
+        turn = 0
         S = np.array(initial_state)
         finished = 0
         penalty = 0
@@ -283,8 +288,10 @@ epsilon = 0.5
 
 for i in range(500):
     epsilon = epsilon*0.95
-    learning(1000, WinExp, Exp, epsilon)
+    r_record = learning(1000, WinExp, Exp, epsilon)
     result.append(test_play())
+    print pd.Series(r_record).value_counts()
+    print np.mean(r_record)
     plt.figure()
     plt.plot(range(len(result)), result)
     plt.show()
