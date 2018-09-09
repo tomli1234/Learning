@@ -26,6 +26,8 @@ class player():
             
             # random move
             selected = np.random.choice(len(i), 1)[0]
+
+            #np.array_equal(game_1.state, player_1.Q['state'].iloc[0])
     
             self.move_t = i[selected], j[selected]
     
@@ -34,14 +36,14 @@ class player():
 
             # Check winner
             g.check_winner()
-            self.win = g.winner
+            self.win = g.winner[self.position]
             
             # Check finish
             g.check_finish()
 
     
     def update_Q(self):
-        reward = np.float(self.win[self.position])
+        reward = np.float(self.win)
         
         Q = reward
         self.Q = self.Q.append(pd.DataFrame([{'state': self.state_t, 'action': self.move_t, 'Q': Q}]))
@@ -54,7 +56,7 @@ class player():
 class game():
     def __init__(self):
         self.state = np.zeros((3, 3))
-        self.state[:] = np.nan
+        self.state[:] = -100
         self.finish = False
         self.winner = [0, 0]
 
@@ -83,9 +85,21 @@ for i in range(100):
         player_1.update_Q()
 
         
+# Evaluation
+# random move baseline
+player_1 = player(1)
+player_0 = player(0)
+
+win_record = []
+for i in range(1000):
+    game_1 = game()
+    while game_1.finish == False:
+        player_1.move(game_1)
+        player_0.move(game_1)
+    win_record.append(player_1.win)
+
+pd.DataFrame(win_record)[0].value_counts()
+
         
-print(game_1.state)
-
-game_1.winner
-game_1.finish
-
+        
+        
