@@ -12,14 +12,14 @@ class player():
     def __init__(self, position):
         self.position = position
         initial_Q = np.zeros((3, 3))
-        initial_Q[:] = np.nan
+        initial_Q[:] = -100
         self.Q = pd.DataFrame([{'state': initial_Q, 'action': (0, 0), 'Q': 0}])
 
     
     def move(self, g):
       
         if g.finish == False:
-            valid =np.isnan(g.state)
+            valid = g.state == -100
             i, j = np.where(valid)
             self.state_t = g.state + 0 # why upadte automatically if not + 0?
     
@@ -69,7 +69,7 @@ class game():
             self.winner[i] = (3 in row_sum) or (3 in col_sum)
             
     def check_finish(self):
-        if sum(self.winner) > 0 or np.sum(np.isnan(self.state)) == 0:
+        if sum(self.winner) > 0 or np.sum(self.state) >= 0:
             self.finish = True
         
     
